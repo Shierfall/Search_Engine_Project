@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* custom styles */
+@layer base {
+  html {
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+  
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  mark {
+    background-color: rgba(252, 211, 77, 0.4);
+    color: inherit;
+    border-radius: 0.125rem;
+    padding: 0 0.125rem;
+  }
+  
+  /* dark mode mark style */
+  .dark mark {
+    background-color: rgba(252, 211, 77, 0.3);
+    color: inherit;
+  }
+  
+  /* add transitions for all common elements */
+  *, *::before, *::after {
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+} 
