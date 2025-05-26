@@ -15,7 +15,7 @@ namespace SearchEngine.Benchmarks;
 public class IndexConstructionBenchmark
 {
     private string[] _fileSizes = new[] { "100KB", "1MB", "2MB", "5MB", "10MB", "20MB", "50MB", "100MB", "200MB", "400MB" };
-    private string _basePath = "/home/shierfall/Downloads/texts/"; // adjust this path to your local environment
+    private string _basePath = "/zhome/6b/1/188023/Downloads/texts/"; // adjust this path to your local environment
     private Analyzer _analyzer;
     private IExactPrefixIndex _trie;
     private IFullTextIndex _invertedIndex;

@@ -16,7 +16,7 @@ namespace SearchEngine.Benchmarks;
 public class CompressionBenchmark
 {
     private string[] _fileSizes = new[] { "100KB", "1MB", "5MB", "10MB", "20MB" , "50MB", "100MB", "200MB", "400MB" };
-    private string _basePath = "/home/shierfall/Downloads/texts/";
+    private string _basePath = "/zhome/6b/1/188023/Downloads/texts/";
     private DocumentCompressionService _compressionService;
     private string _currentContent;
     private InvertedIndex _invertedIndexWithDelta;

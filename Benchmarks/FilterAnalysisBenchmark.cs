@@ -17,7 +17,7 @@ namespace SearchEngine.Benchmarks;
 public class FilterAnalysisBenchmark
 {
     private string[] _fileSizes = new[] { "100KB", "1MB", "2MB", "5MB", "10MB", "20MB", "50MB" }; // Limit to reasonable sizes for filter analysis
-    private string _basePath = "/home/shierfall/Downloads/texts/";
+    private string _basePath = "/zhome/6b/1/188023/Downloads/texts/";
     
     // common English stop words
     private static readonly string[] StopWords = new[] {

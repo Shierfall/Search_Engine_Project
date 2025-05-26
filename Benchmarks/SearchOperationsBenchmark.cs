@@ -20,7 +20,7 @@ namespace SearchEngine.Benchmarks;
 public class SearchOperationsBenchmark
 {
     private string[] _fileSizes = new[] { "100KB", "1MB", "2MB", "5MB", "10MB", "20MB", "50MB", "100MB", "200MB", "400MB" };
-    private string _basePath = "/home/shierfall/Downloads/texts/"; // path to text files
+    private string _basePath = "/zhome/6b/1/188023/Downloads/texts/"; // path to text files
     private Analyzer _analyzer = null!;
     private IExactPrefixIndex _trie = null!;
     private IFullTextIndex _invertedIndex = null!;
