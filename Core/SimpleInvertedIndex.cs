@@ -242,17 +242,24 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
     private static List<int> MergePositions(List<int> prev, List<int> cur)
     {
         var outp = new List<int>();
-        // delta decoder
         if (prev.Count > 0 && prev[0] == 0) prev = Decode(prev);
         if (cur.Count > 0 && cur[0] == 0) cur = Decode(cur);
-
-        // use binary search for each prev position
-        foreach (var p in prev)
+        
+        int i = 0, j = 0;
+        while (i < prev.Count && j < cur.Count)
         {
-            int idx = BinarySearch(cur, p + 1);
-            if (idx != -1)
-                outp.Add(cur[idx]);
+            int target = prev[i] + 1;
+            while (j < cur.Count && cur[j] < target)
+            {
+                j++;
+            }
+            if (j < cur.Count && cur[j] == target)
+            {
+                outp.Add(cur[j]);
+            }
+                i++;
         }
+        
         return outp;
     }
 
