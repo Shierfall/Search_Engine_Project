@@ -1,5 +1,5 @@
 SearchEngine                            # root project directory
-├── Analysis                          # text processing pipeline for tokenization and text normalization
+├── Analysis                          # text processing pipeline for tokenization
 │   ├── Analyzer.cs                   # combines tokenizers and filters into a processing pipeline
 │   ├── Filters                       # directory containing various token filters
 │   ├── Interfaces                    # interfaces for the analysis components

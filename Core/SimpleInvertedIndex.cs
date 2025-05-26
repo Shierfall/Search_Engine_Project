@@ -147,7 +147,6 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
                 if (valid.Count > 0) 
                 {
                     nextSet[p.DocId] = valid;
-                    // Track match count
                     nextMatchCounts[p.DocId] = matchCounts.TryGetValue(p.DocId, out var prevCount) ? 
                         prevCount + 1 : 1;
                 }

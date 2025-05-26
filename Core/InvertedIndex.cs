@@ -378,22 +378,29 @@ public sealed class InvertedIndex : IFullTextIndex
         return -1;
     }
 
-    private static List<int> MergePositions(List<int> prev, List<int> cur)
+private static List<int> MergePositions(List<int> prev, List<int> cur)
+{
+    var outp = new List<int>();
+    if (prev.Count > 0 && prev[0] == 0) prev = Decode(prev);
+    if (cur.Count > 0 && cur[0] == 0) cur = Decode(cur);
+    
+    int i = 0, j = 0;
+    while (i < prev.Count && j < cur.Count)
     {
-        var outp = new List<int>();
-        // delta decoder
-        if (prev.Count > 0 && prev[0] == 0) prev = Decode(prev);
-        if (cur.Count  > 0 && cur [0] == 0) cur  = Decode(cur);
-
-        // use binary search for each prev position
-        foreach (var p in prev)
+        int target = prev[i] + 1;
+        while (j < cur.Count && cur[j] < target)
         {
-            int idx = BinarySearch(cur, p + 1);
-            if (idx != -1)
-                outp.Add(cur[idx]);
+            j++;
         }
-        return outp;
+        if (j < cur.Count && cur[j] == target)
+        {
+            outp.Add(cur[j]);
+        }
+            i++;
     }
+    
+    return outp;
+}
 
     private static List<int> Decode(List<int> deltas)
     {
