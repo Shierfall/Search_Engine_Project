@@ -26,7 +26,6 @@ public class SearchOperationsBenchmark
     private IFullTextIndex _invertedIndex = null!;
     private IBloomFilter _bloomFilter = null!;
     private string _currentFile = null!;
-    private string _currentContent = null!;
     
     // categorize queries by type for more meaningful benchmarks
     private static readonly Dictionary<string, List<string>> _queryCategories = new()
@@ -52,25 +51,76 @@ public class SearchOperationsBenchmark
         _currentFile = Path.Combine(_basePath, $"{FileSize}.txt");
         
         Console.WriteLine($"Loading file: {_currentFile}");
-        _currentContent = File.ReadAllText(_currentFile);
-        Console.WriteLine($"File loaded: {_currentContent.Length} characters");
-
-        // index the content
-        var tokens = _analyzer.Analyze(_currentContent).ToList();
-        Console.WriteLine($"Tokens generated: {tokens.Count}");
         
-        _trie.AddDocument(1, tokens);
-        _invertedIndex.AddDocument(1, tokens);
-        
-        foreach (var token in tokens)
-        {
-            _bloomFilter.Add(token.Term);
-        }
+        ProcessMultipleDocuments();
         
         Console.WriteLine("Benchmark setup complete.");
     }
+    
+    private void ProcessMultipleDocuments()
+    {
+        using var reader = new StreamReader(_currentFile, Encoding.UTF8);
+        string? line;
+        string? currentTitle = null;
+        var sb = new StringBuilder();
+        int docId = 1;
+        int totalTokens = 0;
+        
+        while ((line = reader.ReadLine()) != null)
+        {
+            if (currentTitle == null)
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    currentTitle = line;
+                }
+            }
+            else if (line.Trim() == "---END.OF.DOCUMENT---")
+            {
+                if (sb.Length > 0)
+                {
+                    string content = sb.ToString().Trim();
+                    var tokens = _analyzer.Analyze(content).ToList();
+                    totalTokens += tokens.Count;
+                    _trie.AddDocument(docId, tokens);
+                    _invertedIndex.AddDocument(docId, tokens);
+                    
+                    foreach (var token in tokens)
+                    {
+                        _bloomFilter.Add(token.Term);
+                    }
+                    
+                    docId++;
+                }
+                currentTitle = null;
+                sb.Clear();
+            }
+            else
+            {
+                sb.AppendLine(line);
+            }
+        }
+        
+        if (currentTitle != null && sb.Length > 0)
+        {
+            string content = sb.ToString().Trim();
+            var tokens = _analyzer.Analyze(content).ToList();
+            totalTokens += tokens.Count;
+            
+            _trie.AddDocument(docId, tokens);
+            _invertedIndex.AddDocument(docId, tokens);
+            
+            foreach (var token in tokens)
+            {
+                _bloomFilter.Add(token.Term);
+            }
+        }
+        
+        Console.WriteLine($"Total documents indexed: {docId}");
+        Console.WriteLine($"Total tokens generated: {totalTokens}");
+    }
 
-    // One exact search benchmark per data structure, all returning document lists
+
     [BenchmarkCategory("ExactSearch")]
     [Arguments("and")]
     [Arguments("or")]

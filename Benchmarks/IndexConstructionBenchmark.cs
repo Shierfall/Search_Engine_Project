@@ -21,7 +21,6 @@ public class IndexConstructionBenchmark
     private IFullTextIndex _invertedIndex;
     private IBloomFilter _bloomFilter;
     private string _currentFile;
-    private string _currentContent;
 
     [ParamsSource(nameof(FileSizes))]
     public string FileSize { get; set; }
@@ -36,30 +35,77 @@ public class IndexConstructionBenchmark
         _invertedIndex = new SimpleInvertedIndex();
         _bloomFilter = new BloomFilter(2000000, 0.03); // assuming max 1M unique terms
         _currentFile = Path.Combine(_basePath, $"{FileSize}.txt");
-        _currentContent = File.ReadAllText(_currentFile);
     }
 
     [Benchmark]
     public void TrieConstruction()
     {
-        var tokens = _analyzer.Analyze(_currentContent).ToList();
-        _trie.AddDocument(1, tokens);
+        ProcessMultipleDocuments(doc => {
+            var tokens = _analyzer.Analyze(doc.content).ToList();
+            _trie.AddDocument(doc.id, tokens);
+        });
     }
 
     [Benchmark]
     public void InvertedIndexConstruction()
     {
-        var tokens = _analyzer.Analyze(_currentContent).ToList();
-        _invertedIndex.AddDocument(1, tokens);
+        ProcessMultipleDocuments(doc => {
+            var tokens = _analyzer.Analyze(doc.content).ToList();
+            _invertedIndex.AddDocument(doc.id, tokens);
+        });
     }
 
     [Benchmark]
     public void BloomFilterConstruction()
     {
-        var tokens = _analyzer.Analyze(_currentContent).ToList();
-        foreach (var token in tokens)
+        ProcessMultipleDocuments(doc => {
+            var tokens = _analyzer.Analyze(doc.content).ToList();
+            foreach (var token in tokens)
+            {
+                _bloomFilter.Add(token.Term);
+            }
+        });
+    }
+    
+    private void ProcessMultipleDocuments(Action<(int id, string content)> processDocument)
+    {
+        using var reader = new StreamReader(_currentFile, Encoding.UTF8);
+        string? line;
+        string? currentTitle = null;
+        var sb = new StringBuilder();
+        int docId = 1;
+        
+        while ((line = reader.ReadLine()) != null)
         {
-            _bloomFilter.Add(token.Term);
+            if (currentTitle == null)
+            {
+             
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    currentTitle = line;
+                }
+            }
+            else if (line.Trim() == "---END.OF.DOCUMENT---")
+            {
+                if (sb.Length > 0)
+                {
+                    string content = sb.ToString().Trim();
+                    processDocument((docId++, content));
+                }
+                
+         
+                currentTitle = null;
+                sb.Clear();
+            }
+            else
+            {
+                         sb.AppendLine(line);
+            }
+        }
+        if (currentTitle != null && sb.Length > 0)
+        {
+            string content = sb.ToString().Trim();
+            processDocument((docId, content));
         }
     }
 

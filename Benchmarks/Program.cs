@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Running;
+using BenchmarkDotNet.Configs;
 using System;
 namespace SearchEngine.Benchmarks;
 
@@ -6,6 +7,9 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        var config = DefaultConfig.Instance
+            .WithOptions(ConfigOptions.DisableOptimizationsValidator);
+
         if (args.Length > 0)
         {
             switch (args[0])
@@ -18,10 +22,10 @@ public class Program
                     
                 case "benchmark":
                     Console.WriteLine("Running Index Construction Benchmark...");
-                    BenchmarkRunner.Run<IndexConstructionBenchmark>();
+                    BenchmarkRunner.Run<IndexConstructionBenchmark>(config);
                     
                     Console.WriteLine("\nRunning Search Operations Benchmark...");
-                    BenchmarkRunner.Run<SearchOperationsBenchmark>();
+                    BenchmarkRunner.Run<SearchOperationsBenchmark>(config);
                     break;
                     
                 case "compression-stats":
@@ -38,7 +42,7 @@ public class Program
                     
                 case "compression-benchmark":
                     Console.WriteLine("Running compression performance benchmarks...");
-                    BenchmarkRunner.Run<CompressionBenchmark>();
+                    BenchmarkRunner.Run<CompressionBenchmark>(config);
                     break;
                     
                 case "filter-analysis":
@@ -54,9 +58,8 @@ public class Program
         }
         else
         {
-            // Default behavior - run memory usage for a single file size
             IndexConstructionBenchmark benchmark = new IndexConstructionBenchmark();
-            benchmark.FileSize = "10MB"; // Default file size
+            benchmark.FileSize = "10MB"; 
             benchmark.Setup();
             benchmark.TrieConstruction();
             benchmark.InvertedIndexConstruction();
@@ -77,4 +80,4 @@ public class Program
         Console.WriteLine("  compression-benchmark - Run performance benchmarks for compression and delta encoding");
         Console.WriteLine("  filter-analysis      - Analyze how different filter combinations affect memory usage");
     }
-} 
+}

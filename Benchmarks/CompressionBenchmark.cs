@@ -35,7 +35,6 @@ public class CompressionBenchmark
         {
             Console.WriteLine($"Setting up benchmark for file size: {FileSize}");
             
-            // Initialize services
             _compressionService = new DocumentCompressionService();
             _invertedIndexWithDelta = new InvertedIndex();
             _invertedIndexWithDelta.SetDeltaEncoding(true);
@@ -44,8 +43,7 @@ public class CompressionBenchmark
             _invertedIndexNoDelta.SetDeltaEncoding(false);
             
             _analyzer = new Analyzer(new MinimalTokenizer());
-            
-            // Load content
+
             string filePath = Path.Combine(_basePath, $"{FileSize}.txt");
             Console.WriteLine($"Loading file from: {filePath}");
             
@@ -191,11 +189,10 @@ public class CompressionBenchmark
                 var noDeltaIndex = new InvertedIndex();
                 noDeltaIndex.SetDeltaEncoding(false);
                 
-                // Add same content to both
                 deltaIndex.AddDocument(1, tokens);
                 noDeltaIndex.AddDocument(1, tokens);
                 
-                // Count total positions storage size (more direct than using reflection)
+
                 long deltaPositionsSize = MeasurePositionStorage(deltaIndex);
                 long noDeltaPositionsSize = MeasurePositionStorage(noDeltaIndex);
                 
@@ -459,10 +456,10 @@ public class CompressionBenchmark
     
     private int CalculateVariableLengthIntSize(int value)
     {
-        // This simulates a variable-length encoding scheme like VarInt or LEB128
+        // this simulates a variable-length encoding scheme like VarInt or LEB128
         // where smaller integers take fewer bytes
         
-        // Make value positive if it's negative
+        // make value positive if it's negative
         uint uValue = (uint)(value < 0 ? -value : value);
         
         if (uValue < 128) return 1;       // 1 byte for 0-127
