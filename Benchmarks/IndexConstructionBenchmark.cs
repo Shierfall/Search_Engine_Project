@@ -21,6 +21,8 @@ public class IndexConstructionBenchmark
     private IFullTextIndex _invertedIndex;
     private IBloomFilter _bloomFilter;
     private string _currentFile;
+    private int _documentsIndexed;
+    private int _tokensProcessed;
 
     [ParamsSource(nameof(FileSizes))]
     public string FileSize { get; set; }
@@ -35,36 +37,87 @@ public class IndexConstructionBenchmark
         _invertedIndex = new SimpleInvertedIndex();
         _bloomFilter = new BloomFilter(2000000, 0.03); // assuming max 1M unique terms
         _currentFile = Path.Combine(_basePath, $"{FileSize}.txt");
+        if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+        {
+            Console.WriteLine($"Loading file: {_currentFile}");
+        }
+        _documentsIndexed = 0;
+        _tokensProcessed = 0;
+        // Optionally, pre-process here if needed
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+    }
+
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _trie = null!;
+        _invertedIndex = null!;
+        _bloomFilter = null!;
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
     }
 
     [Benchmark]
     public void TrieConstruction()
     {
+        int docCount = 0;
+        int tokenCount = 0;
         ProcessMultipleDocuments(doc => {
             var tokens = _analyzer.Analyze(doc.content).ToList();
             _trie.AddDocument(doc.id, tokens);
+            docCount++;
+            tokenCount += tokens.Count;
         });
+        _documentsIndexed = docCount;
+        _tokensProcessed = tokenCount;
+        if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+        {
+            Console.WriteLine($"Trie: Documents indexed: {docCount}, Tokens: {tokenCount}");
+        }
     }
 
     [Benchmark]
     public void InvertedIndexConstruction()
     {
+        int docCount = 0;
+        int tokenCount = 0;
         ProcessMultipleDocuments(doc => {
             var tokens = _analyzer.Analyze(doc.content).ToList();
             _invertedIndex.AddDocument(doc.id, tokens);
+            docCount++;
+            tokenCount += tokens.Count;
         });
+        _documentsIndexed = docCount;
+        _tokensProcessed = tokenCount;
+        if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+        {
+            Console.WriteLine($"InvertedIndex: Documents indexed: {docCount}, Tokens: {tokenCount}");
+        }
     }
 
     [Benchmark]
     public void BloomFilterConstruction()
     {
+        int docCount = 0;
+        int tokenCount = 0;
         ProcessMultipleDocuments(doc => {
             var tokens = _analyzer.Analyze(doc.content).ToList();
             foreach (var token in tokens)
             {
                 _bloomFilter.Add(token.Term);
             }
+            docCount++;
+            tokenCount += tokens.Count;
         });
+        _documentsIndexed = docCount;
+        _tokensProcessed = tokenCount;
+        if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+        {
+            Console.WriteLine($"BloomFilter: Documents indexed: {docCount}, Tokens: {tokenCount}");
+        }
     }
     
     private void ProcessMultipleDocuments(Action<(int id, string content)> processDocument)

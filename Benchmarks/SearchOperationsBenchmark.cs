@@ -26,6 +26,8 @@ public class SearchOperationsBenchmark
     private IFullTextIndex _invertedIndex = null!;
     private IBloomFilter _bloomFilter = null!;
     private string _currentFile = null!;
+    private int _documentsIndexed;
+    private int _tokensProcessed;
     
     // categorize queries by type for more meaningful benchmarks
     private static readonly Dictionary<string, List<string>> _queryCategories = new()
@@ -49,14 +51,33 @@ public class SearchOperationsBenchmark
         _invertedIndex = new SimpleInvertedIndex();
         _bloomFilter = new BloomFilter(2000000, 0.03);
         _currentFile = Path.Combine(_basePath, $"{FileSize}.txt");
-        
-        Console.WriteLine($"Loading file: {_currentFile}");
-        
+        if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+        {
+            Console.WriteLine($"Loading file: {_currentFile}");
+        }
+        _documentsIndexed = 0;
+        _tokensProcessed = 0;
         ProcessMultipleDocuments();
-        
-        Console.WriteLine("Benchmark setup complete.");
+        if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+        {
+            Console.WriteLine($"Benchmark setup complete. Documents: {_documentsIndexed}, Tokens: {_tokensProcessed}");
+        }
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
     }
-    
+
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _trie = null!;
+        _invertedIndex = null!;
+        _bloomFilter = null!;
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+    }
+
     private void ProcessMultipleDocuments()
     {
         using var reader = new StreamReader(_currentFile, Encoding.UTF8);
@@ -116,8 +137,8 @@ public class SearchOperationsBenchmark
             }
         }
         
-        Console.WriteLine($"Total documents indexed: {docId}");
-        Console.WriteLine($"Total tokens generated: {totalTokens}");
+        _documentsIndexed = docId;
+        _tokensProcessed = totalTokens;
     }
 
 
@@ -233,4 +254,4 @@ public class SearchOperationsBenchmark
     {
         return _invertedIndex.BooleanSearch(query);
     }
-} 
+}
