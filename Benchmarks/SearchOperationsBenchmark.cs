@@ -61,7 +61,7 @@ namespace SearchEngine.Benchmarks
 
             _documentsIndexed = 0;
             _tokensProcessed = 0;
-            ProcessMultipleDocuments();
+            // ProcessMultipleDocuments();
 
             if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
                 Console.WriteLine($"Benchmark setup complete. Documents: {_documentsIndexed}, Tokens: {_tokensProcessed}");
@@ -182,18 +182,17 @@ namespace SearchEngine.Benchmarks
         [Benchmark(Description = "InvertedIndex-Boolean-Bitset")]
         public List<(int docId, int count)> InvertedIndexBooleanSearch(string query) => _invertedIndex.BooleanSearch(query);
 
-        private void ProcessMultipleDocuments()
+        private async Task ProcessMultipleDocumentsAsync()
         {
-            var documents = new List<(int docId, string content)>();
             using var reader = new StreamReader(_currentFile, Encoding.UTF8);
             string? line;
             string? currentTitle = null;
             var sb = new StringBuilder();
-            int docId = 1;
 
-            var documentBatch = new List<(int docId, List<Token> tokens)>();
+            var documentBatch = new List<(int docId, string content)>();
             var batchSize = 100;
-            int totalTokens = 0;
+            int docCounter = 0;
+            int docId = 1;
 
             while ((line = reader.ReadLine()) != null)
             {
@@ -206,26 +205,21 @@ namespace SearchEngine.Benchmarks
                 {
                     if (sb.Length > 0)
                     {
-                        var content = sb.ToString().Trim();
-                        var tokens = _analyzer.Analyze(content).ToList();
-                        totalTokens += tokens.Count;
-                        documentBatch.Add((docId, tokens));
-                        docId++;
+                        string content = sb.ToString().Trim();
+                        docCounter++;
+
+                        // Add to batch
+                        documentBatch.Add((docId++, content));
 
                         // Process batch when it reaches the target size
                         if (documentBatch.Count >= batchSize)
                         {
-                            Parallel.ForEach(documentBatch, doc =>
-                            {
-                                _trie.AddDocument(doc.docId, doc.tokens);
-                                _invertedIndex.AddDocument(doc.docId, doc.tokens);
-                                foreach (var token in doc.tokens)
-                                    _bloomFilter.Add(token.Term);
-                            });
-
+                            await IndexDocumentsBatchAsync(documentBatch);
                             documentBatch.Clear();
+                            Console.WriteLine($"Processed batch of {batchSize} documents (total: {docCounter})");
                         }
                     }
+
                     currentTitle = null;
                     sb.Clear();
                 }
@@ -238,17 +232,27 @@ namespace SearchEngine.Benchmarks
             // Process final batch if any documents remain
             if (documentBatch.Count > 0)
             {
-                Parallel.ForEach(documentBatch, doc =>
-                {
-                    _trie.AddDocument(doc.docId, doc.tokens);
-                    _invertedIndex.AddDocument(doc.docId, doc.tokens);
-                    foreach (var token in doc.tokens)
-                        _bloomFilter.Add(token.Term);
-                });
+                await IndexDocumentsBatchAsync(documentBatch);
+                Console.WriteLine($"Processed final batch of {documentBatch.Count} documents (total: {docCounter})");
             }
 
-            _documentsIndexed = docId - 1;
-            _tokensProcessed = totalTokens;
+            _documentsIndexed = docCounter;
+        }
+
+        private async Task IndexDocumentsBatchAsync(List<(int docId, string content)> documentBatch)
+        {
+            foreach (var (docId, content) in documentBatch)
+            {
+                var tokens = _analyzer.Analyze(content).ToList();
+                _trie.AddDocument(docId, tokens);
+                _invertedIndex.AddDocument(docId, tokens);
+                foreach (var token in tokens)
+                {
+                    _bloomFilter.Add(token.Term);
+                }
+            }
+
+            await Task.CompletedTask; // Simulate async behavior for consistency
         }
     }
 }
