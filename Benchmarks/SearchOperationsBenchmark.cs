@@ -9,16 +9,10 @@ using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Exporters.Csv;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Jobs;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using SearchEngine.Analysis;
 using SearchEngine.Analysis.Tokenizers;
 using SearchEngine.Core;
 using SearchEngine.Core.Interfaces;
-using SearchEngine.Services;
-using SearchEngine.Services.Interfaces;
-using SearchEngine.Persistence;
-using SearchEngine.Benchmarks;
 
 namespace SearchEngine.Benchmarks
 {
@@ -31,13 +25,10 @@ namespace SearchEngine.Benchmarks
     {
         private string[] _fileSizes = new[] { "100KB", "1MB", "2MB", "5MB", "10MB", "20MB", "50MB", "100MB", "200MB", "400MB" };
         private string _basePath = "/zhome/6b/1/188023/Downloads/texts/";
-        private ServiceProvider _serviceProvider;
-        private IIndexingService _indexingService;
-        private ISearchService _searchService;
-        private IExactPrefixIndex _trie;
-        private IFullTextIndex _invertedIndex; 
-        private IBloomFilter _bloomFilter;
         private Analyzer _analyzer;
+        private IExactPrefixIndex _trie;
+        private IFullTextIndex _invertedIndex;
+        private IBloomFilter _bloomFilter;
         private string _currentFile;
         private int _documentsIndexed;
         private int _tokensProcessed;
@@ -58,61 +49,11 @@ namespace SearchEngine.Benchmarks
         [GlobalSetup]
         public void Setup()
         {
-            // Set up dependency injection similar to Program.cs
-            var services = new ServiceCollection();
-            
-            // Configure services like in Program.cs
-            services.AddSingleton<Analyzer>(sp => new Analyzer(new MinimalTokenizer()));
-            
-            // Add search operations
-            services.AddSingleton<ISearchOperation, ExactSearchOperation>();
-            services.AddSingleton<ISearchOperation>(sp =>
-                new PrefixDocsSearchOperation(sp.GetRequiredService<IExactPrefixIndex>())
-            );
-            services.AddSingleton<ISearchOperation, AutoCompleteSearchOperation>();
-            services.AddSingleton<ISearchOperation, FullTextSearchOperation>();
-            services.AddSingleton<ISearchOperation, BloomFilterSearchOperation>();
-            
-            // Add core services
-            services.AddSingleton<ISearchService, SearchService>();
-            services.AddSingleton<IIndexingService, IndexingService>();
-            
-            // Register indexes
-            services.AddSingleton<IExactPrefixIndex, CompactTrieIndex>();
-            services.AddSingleton<IFullTextIndex, CompactTrieIndex>();
-            services.AddSingleton<IBloomFilter>(provider => new BloomFilter(8000000, 0.01));
-            
-            // Add logging (using null logger for benchmarks)
-            services.AddLogging(builder => {
-                builder.AddConsole();
-                builder.SetMinimumLevel(LogLevel.Warning); // Only show warnings and above
-            });
-            
-            // Add repository services for benchmarking
-            // Use interfaces directly to avoid issues with non-virtual methods
-            services.AddSingleton<DocumentRepository, DocumentRepository>();
-            services.AddSingleton<DocumentTermRepository, DocumentTermRepository>();
-            services.AddSingleton<IDocumentService, DocumentService>();
-            services.AddSingleton<FileContentService>();
-            
-            _serviceProvider = services.BuildServiceProvider();
-            
-            _serviceProvider = services.BuildServiceProvider();
-            
-            // Get services
-            _indexingService = _serviceProvider.GetRequiredService<IIndexingService>();
-            _searchService = _serviceProvider.GetRequiredService<ISearchService>();
-            _trie = _serviceProvider.GetRequiredService<IExactPrefixIndex>();
-            _invertedIndex = _serviceProvider.GetRequiredService<IFullTextIndex>();
-            _bloomFilter = _serviceProvider.GetRequiredService<IBloomFilter>();
-            _analyzer = _serviceProvider.GetRequiredService<Analyzer>();
-            
-            // Turn off BM25 for benchmarks
-            if (_trie is CompactTrieIndex trieIndex)
-            {
-                trieIndex.SetUseBM25(false);
-            }
-            
+            _analyzer = new Analyzer(new MinimalTokenizer());
+            _trie = new CompactTrieIndex();
+            _trie.SetUseBM25(false);
+            _invertedIndex = new InvertedIndex();
+            _bloomFilter = new BloomFilter(8000000, 0.01);
             _currentFile = Path.Combine(_basePath, $"{FileSize}.txt");
 
             if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
@@ -120,7 +61,7 @@ namespace SearchEngine.Benchmarks
 
             _documentsIndexed = 0;
             _tokensProcessed = 0;
-            ProcessMultipleDocumentsWithService().Wait();
+            ProcessMultipleDocuments();
 
             if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
                 Console.WriteLine($"Benchmark setup complete. Documents: {_documentsIndexed}, Tokens: {_tokensProcessed}");
@@ -136,13 +77,6 @@ namespace SearchEngine.Benchmarks
             _trie = null;
             _invertedIndex = null;
             _bloomFilter = null;
-            _indexingService = null;
-            _searchService = null;
-            
-            // Dispose of the service provider
-            (_serviceProvider as IDisposable)?.Dispose();
-            _serviceProvider = null;
-            
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
@@ -248,22 +182,19 @@ namespace SearchEngine.Benchmarks
         [Benchmark(Description = "InvertedIndex-Boolean-Bitset")]
         public List<(int docId, int count)> InvertedIndexBooleanSearch(string query) => _invertedIndex.BooleanSearch(query);
 
-        private async Task ProcessMultipleDocumentsWithService()
+        private void ProcessMultipleDocuments()
         {
-            // Prepare for batch processing similar to Program.cs
-            var documentBatch = new List<(int docId, string content)>();
-            const int batchSize = 100;
-            
+            var documents = new List<(int docId, string content)>();
             using var reader = new StreamReader(_currentFile, Encoding.UTF8);
             string? line;
             string? currentTitle = null;
             var sb = new StringBuilder();
             int docId = 1;
-            
-            // Get required services
-            var docService = _serviceProvider.GetRequiredService<IDocumentService>();
-            var indexingService = _serviceProvider.GetRequiredService<IIndexingService>();
-            
+
+            var documentBatch = new List<(int docId, List<Token> tokens)>();
+            var batchSize = 100;
+            int totalTokens = 0;
+
             while ((line = reader.ReadLine()) != null)
             {
                 if (currentTitle == null)
@@ -275,22 +206,24 @@ namespace SearchEngine.Benchmarks
                 {
                     if (sb.Length > 0)
                     {
-                        string content = sb.ToString().Trim();
-                        
-                        // Create document with content
-                        docId = await docService.CreateWithContentAsync(currentTitle ?? "Untitled", content);
-                        
-                        // Add to batch for indexing
-                        documentBatch.Add((docId, content));
-                        
+                        var content = sb.ToString().Trim();
+                        var tokens = _analyzer.Analyze(content).ToList();
+                        totalTokens += tokens.Count;
+                        documentBatch.Add((docId, tokens));
+                        docId++;
+
                         // Process batch when it reaches the target size
                         if (documentBatch.Count >= batchSize)
                         {
-                            await indexingService.IndexDocumentsBatchAsync(documentBatch);
+                            Parallel.ForEach(documentBatch, doc =>
+                            {
+                                _trie.AddDocument(doc.docId, doc.tokens);
+                                _invertedIndex.AddDocument(doc.docId, doc.tokens);
+                                foreach (var token in doc.tokens)
+                                    _bloomFilter.Add(token.Term);
+                            });
+
                             documentBatch.Clear();
-                            
-                            if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
-                                Console.WriteLine($"Processed batch of {batchSize} documents");
                         }
                     }
                     currentTitle = null;
@@ -305,17 +238,17 @@ namespace SearchEngine.Benchmarks
             // Process final batch if any documents remain
             if (documentBatch.Count > 0)
             {
-                await indexingService.IndexDocumentsBatchAsync(documentBatch);
-                if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
-                    Console.WriteLine($"Processed final batch of {documentBatch.Count} documents");
+                Parallel.ForEach(documentBatch, doc =>
+                {
+                    _trie.AddDocument(doc.docId, doc.tokens);
+                    _invertedIndex.AddDocument(doc.docId, doc.tokens);
+                    foreach (var token in doc.tokens)
+                        _bloomFilter.Add(token.Term);
+                });
             }
-            
-            // Get document count
-            var docs = await docService.GetAllAsync();
-            _documentsIndexed = docs.Count;
-            
-            // We don't need to calculate token count since it's not used in the benchmarks
-            _tokensProcessed = 0;
+
+            _documentsIndexed = docId - 1;
+            _tokensProcessed = totalTokens;
         }
     }
 }
