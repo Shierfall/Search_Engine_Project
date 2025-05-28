@@ -303,7 +303,7 @@ public class CompactTrieIndex : IExactPrefixIndex, IFullTextIndex
             if (node == null) return new List<(string, List<int>)>();
 
             var builder = new List<(string, List<int>)>();
-            var currentWord = prefix.Substring(0, prefix.Length - (node.Length - CommonPrefix(node, 0, 0, 0)));
+            var currentWord = prefix;
             CollectWords(node, currentWord, builder);
             return builder;
         }
@@ -331,7 +331,7 @@ public class CompactTrieIndex : IExactPrefixIndex, IFullTextIndex
         {
             var c = kv.Value;
             var w = wordPool[c.PoolIndex].Substring(c.Offset, c.Length);
-            CollectWords(c, prefix + kv.Key, output);
+            CollectWords(c, prefix + w, output);
         }
     }
 
