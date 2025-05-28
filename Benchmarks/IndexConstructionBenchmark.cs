@@ -221,6 +221,10 @@ public class IndexConstructionBenchmark
 
         // measure memory for CompactTrieIndex
         var trieTokens = _analyzer.Analyze(content).ToList();
+        int totalTokens = trieTokens.Count;
+        // count unique tokens
+        var uniqueTokens = new HashSet<string>(trieTokens.Select(t => t.Term)).Count;
+        
         var compactTrie = new CompactTrieIndex();
         compactTrie.SetUseBM25(false); // disable BM25 for fair comparison
         compactTrie.AddDocument(1, trieTokens);
@@ -242,13 +246,13 @@ public class IndexConstructionBenchmark
         long bloomFilterMemory = CalculateBloomFilterMemory(bloomFilter);
         Console.WriteLine($"Bloom Filter: {FormatBytes(bloomFilterMemory)}");
 
+        // calculate total memory usage
+        long totalMemory = trieMemory + invertedIndexMemory + bloomFilterMemory;
+        Console.WriteLine($"Total Memory: {FormatBytes(totalMemory)}");
+        Console.WriteLine($"Total Tokens: {totalTokens}");
+        Console.WriteLine($"Unique Tokens: {uniqueTokens}");
 
-        ExportMemoryUsageToCsv(new[]
-        {
-            ("CompactTrieIndex", trieMemory),
-            ("SimpleInvertedIndex", invertedIndexMemory),
-            ("BloomFilter", bloomFilterMemory)
-        });
+        ExportMemoryUsageToCsv(FileSize, totalTokens, uniqueTokens, trieMemory, invertedIndexMemory, bloomFilterMemory);
 
         Console.WriteLine("----------------------------------------\n");
     }
@@ -384,7 +388,8 @@ public class IndexConstructionBenchmark
         return bloomFilterObjectMemory + bitArrayMemory;
     }
 
-    private void ExportMemoryUsageToCsv((string IndexType, long MemoryUsage)[] results)
+    private void ExportMemoryUsageToCsv(string fileSize, int totalTokens, int uniqueTokens, 
+        long trieMemory, long invertedIndexMemory, long bloomFilterMemory)
     {
         var csvPath = Path.Combine(Directory.GetCurrentDirectory(), "MemoryUsageResults.csv");
         bool fileExists = File.Exists(csvPath);
@@ -393,13 +398,27 @@ public class IndexConstructionBenchmark
         
         if (!fileExists)
         {
-            writer.WriteLine("FileSize,IndexType,MemoryUsage(MB)");
+            writer.WriteLine("File Size,Total Tokens,Unique Tokens," + 
+                             "Trie Memory (Bytes),Trie Memory (MB)," + 
+                             "Inverted Index Memory (Bytes),Inverted Index Memory (MB)," + 
+                             "Bloom Filter Memory (Bytes),Bloom Filter Memory (MB)," + 
+                             "Total Memory (Bytes),Total Memory (MB)");
         }
-        foreach (var (indexType, memoryUsage) in results)
-        {
-            double memorySizeInMB = memoryUsage / (1024.0 * 1024.0);
-            writer.WriteLine($"{FileSize},{indexType},{memorySizeInMB:F2}");
-        }
+        
+        // Calculate total memory
+        long totalMemory = trieMemory + invertedIndexMemory + bloomFilterMemory;
+        
+        // Calculate MB values
+        double trieMemoryMB = trieMemory / (1024.0 * 1024.0);
+        double invertedIndexMemoryMB = invertedIndexMemory / (1024.0 * 1024.0);
+        double bloomFilterMemoryMB = bloomFilterMemory / (1024.0 * 1024.0);
+        double totalMemoryMB = totalMemory / (1024.0 * 1024.0);
+        
+        writer.WriteLine($"{fileSize},{totalTokens},{uniqueTokens}," + 
+                         $"{trieMemory},{trieMemoryMB:F2}," + 
+                         $"{invertedIndexMemory},{invertedIndexMemoryMB:F2}," + 
+                         $"{bloomFilterMemory},{bloomFilterMemoryMB:F2}," + 
+                         $"{totalMemory},{totalMemoryMB:F2}");
         
         Console.WriteLine($"Memory usage results exported to {csvPath}");
     }
