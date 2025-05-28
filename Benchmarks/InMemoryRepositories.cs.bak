@@ -1,0 +1,257 @@
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using SearchEngine.Analysis;
+using SearchEngine.Persistence;
+using SearchEngine.Persistence.Entities;
+using SearchEngine.Services;
+using SearchEngine.Services.Interfaces;
+
+namespace SearchEngine.Benchmarks
+{
+    /// <summary>
+    /// In-memory implementation of DocumentRepository for benchmarking
+    /// </summary>
+    public class InMemoryDocumentRepository : DocumentRepository
+    {
+        private readonly ConcurrentDictionary<int, DocumentEntity> _documents = new();
+        private readonly ConcurrentDictionary<int, byte[]> _contents = new();
+        private int _nextId = 1;
+
+        public override Task<int> CreateAsync(string title)
+        {
+            int id = System.Threading.Interlocked.Increment(ref _nextId) - 1;
+            var doc = new DocumentEntity { Id = id, Title = title };
+            _documents[id] = doc;
+            return Task.FromResult(id);
+        }
+
+        public override Task<bool> DeleteAsync(int id)
+        {
+            bool success = _documents.TryRemove(id, out _);
+            _contents.TryRemove(id, out _);
+            return Task.FromResult(success);
+        }
+
+        public override Task<IReadOnlyList<DocumentEntity>> GetAllAsync()
+        {
+            IReadOnlyList<DocumentEntity> results = _documents.Values.ToList();
+            return Task.FromResult(results);
+        }
+
+        public override Task<DocumentEntity?> GetByIdAsync(int id)
+        {
+            _documents.TryGetValue(id, out var doc);
+            return Task.FromResult(doc);
+        }
+
+        public override Task<DocumentEntity?> GetByTitleAsync(string title)
+        {
+            var doc = _documents.Values.FirstOrDefault(d => d.Title == title);
+            return Task.FromResult(doc);
+        }
+
+        public override Task<bool> UpdateTitleAsync(int id, string newTitle)
+        {
+            if (_documents.TryGetValue(id, out var doc))
+            {
+                doc.Title = newTitle;
+                return Task.FromResult(true);
+            }
+            return Task.FromResult(false);
+        }
+
+        public override Task<string?> GetContentAsync(int id)
+        {
+            if (_contents.TryGetValue(id, out var compressed))
+            {
+                return Task.FromResult((string?)Encoding.UTF8.GetString(compressed));
+            }
+            return Task.FromResult<string?>(null);
+        }
+
+        public override Task<bool> StoreContentAsync(int id, string content, bool compress = true)
+        {
+            if (!_documents.ContainsKey(id))
+                return Task.FromResult(false);
+
+            // We're not actually compressing for benchmarks
+            byte[] bytes = Encoding.UTF8.GetBytes(content);
+            _contents[id] = bytes;
+            return Task.FromResult(true);
+        }
+    }
+
+    /// <summary>
+    /// In-memory implementation of DocumentTermRepository for benchmarking
+    /// </summary>
+    public class InMemoryDocumentTermRepository : DocumentTermRepository
+    {
+        private readonly ConcurrentDictionary<(int docId, string term), DocumentTermEntity> _terms = new();
+
+        public override Task<int> BulkUpsertTermsAsync(int docId, IEnumerable<Token> tokens)
+        {
+            var termGroups = tokens
+                .GroupBy(t => t.Term)
+                .ToList();
+
+            int count = 0;
+            foreach (var group in termGroups)
+            {
+                var term = group.Key;
+                var positions = group.Select(t => t.Position).ToList();
+                var positionsJson = JsonSerializer.Serialize(positions);
+
+                var entity = new DocumentTermEntity
+                {
+                    DocumentId = docId,
+                    Term = term,
+                    Frequency = positions.Count,
+                    Positions = positionsJson
+                };
+
+                _terms[(docId, term)] = entity;
+                count++;
+            }
+
+            return Task.FromResult(count);
+        }
+
+        public override Task<int> DeleteForDocumentAsync(int docId)
+        {
+            var keys = _terms.Keys.Where(k => k.docId == docId).ToList();
+            int count = 0;
+            foreach (var key in keys)
+            {
+                if (_terms.TryRemove(key, out _))
+                    count++;
+            }
+            return Task.FromResult(count);
+        }
+
+        public override Task<List<DocumentTermEntity>> GetForDocumentAsync(int docId)
+        {
+            var results = _terms.Values
+                .Where(t => t.DocumentId == docId)
+                .ToList();
+            return Task.FromResult(results);
+        }
+
+        public override Task<DocumentTermEntity?> GetTermForDocumentAsync(int docId, string term)
+        {
+            _terms.TryGetValue((docId, term), out var entity);
+            return Task.FromResult(entity);
+        }
+    }
+
+    /// <summary>
+    /// In-memory implementation of IDocumentService for benchmarking
+    /// </summary>
+    public class InMemoryDocumentService : IDocumentService
+    {
+        private readonly InMemoryDocumentRepository _documents;
+        private readonly InMemoryDocumentTermRepository _terms;
+        private readonly Analyzer _analyzer;
+
+        public InMemoryDocumentService()
+        {
+            _documents = new InMemoryDocumentRepository();
+            _terms = new InMemoryDocumentTermRepository();
+            _analyzer = new Analyzer(new SearchEngine.Analysis.Tokenizers.MinimalTokenizer());
+        }
+
+        public async Task<int> CreateAsync(string title)
+        {
+            return await _documents.CreateAsync(title);
+        }
+
+        public async Task<int> CreateWithContentAsync(string title, string content)
+        {
+            int docId = await _documents.CreateAsync(title);
+            await _documents.StoreContentAsync(docId, content);
+            var tokens = _analyzer.Analyze(content).ToList();
+            await _terms.BulkUpsertTermsAsync(docId, tokens);
+            return docId;
+        }
+
+        public async Task<bool> DeleteAsync(int docId)
+        {
+            await _terms.DeleteForDocumentAsync(docId);
+            return await _documents.DeleteAsync(docId);
+        }
+
+        public Task DeleteTermsAsync(int docId)
+        {
+            return _terms.DeleteForDocumentAsync(docId);
+        }
+
+        public async Task<IReadOnlyList<DocumentEntity>> GetAllAsync()
+        {
+            return await _documents.GetAllAsync();
+        }
+
+        public async Task<string> GetContentAsync(int docId)
+        {
+            return await _documents.GetContentAsync(docId) ?? "";
+        }
+
+        public async Task<string> GetContentByTitleAsync(string title)
+        {
+            var doc = await _documents.GetByTitleAsync(title);
+            if (doc == null) return "";
+            return await _documents.GetContentAsync(doc.Id) ?? "";
+        }
+
+        public async Task<List<Token>> GetIndexedTokensAsync(int docId)
+        {
+            var terms = await _terms.GetForDocumentAsync(docId);
+            var tokens = new List<Token>();
+
+            foreach (var term in terms)
+            {
+                List<int>? positions = null;
+                try
+                {
+                    positions = JsonSerializer.Deserialize<List<int>>(term.Positions);
+                }
+                catch
+                {
+                    positions = new List<int> { 0 };
+                }
+
+                if (positions != null)
+                {
+                    foreach (var pos in positions)
+                    {
+                        tokens.Add(new Token(term.Term, pos));
+                    }
+                }
+            }
+
+            return tokens.OrderBy(t => t.Position).ToList();
+        }
+
+        public async Task<string> GetTitleAsync(int docId)
+        {
+            var doc = await _documents.GetByIdAsync(docId);
+            return doc?.Title ?? "";
+        }
+
+        public async Task UpdateContentAsync(int docId, string content)
+        {
+            await _documents.StoreContentAsync(docId, content);
+            await _terms.DeleteForDocumentAsync(docId);
+            var tokens = _analyzer.Analyze(content).ToList();
+            await _terms.BulkUpsertTermsAsync(docId, tokens);
+        }
+
+        public Task UpsertTermsAsync(int docId, IEnumerable<Token> tokens)
+        {
+            return _terms.BulkUpsertTermsAsync(docId, tokens);
+        }
+    }
+}
