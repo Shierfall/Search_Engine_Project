@@ -26,15 +26,16 @@ public class SearchOperationsBenchmark
     private IFullTextIndex _invertedIndex = null!;
     private IBloomFilter _bloomFilter = null!;
     private string _currentFile = null!;
-    private string _currentContent = null!;
+    private int _documentsIndexed;
+    private int _tokensProcessed;
     
     // categorize queries by type for more meaningful benchmarks
     private static readonly Dictionary<string, List<string>> _queryCategories = new()
     {
-        ["Exact"] = new() { "and", "or", "cat", "bread" },
+        ["Exact"] = new() { "and", "or", "cat", "because" },
         ["Prefix"] = new() { "an*", "or*", "ca*", "br*" },
         ["Phrase"] = new() { "he was", "it was a", "and when", "or when" },
-        ["Boolean"] = new() { "and && or || cat", "cat && bread", "bread && cat || or", "or && and" }
+        ["Boolean"] = new() { "and && or || cat", "cat && because", "because && cat || or", "or && and" }
     };
 
     [ParamsSource(nameof(FileSizes))]
@@ -47,27 +48,34 @@ public class SearchOperationsBenchmark
     {
         _analyzer = new Analyzer(new MinimalTokenizer());
         _trie = new CompactTrieIndex();
-        _invertedIndex = new SimpleInvertedIndex();
+        _invertedIndex = new InvertedIndex();
         _bloomFilter = new BloomFilter(2000000, 0.03);
         _currentFile = Path.Combine(_basePath, $"{FileSize}.txt");
-        
-        Console.WriteLine($"Loading file: {_currentFile}");
-        _currentContent = File.ReadAllText(_currentFile);
-        Console.WriteLine($"File loaded: {_currentContent.Length} characters");
-
-        // index the content
-        var tokens = _analyzer.Analyze(_currentContent).ToList();
-        Console.WriteLine($"Tokens generated: {tokens.Count}");
-        
-        _trie.AddDocument(1, tokens);
-        _invertedIndex.AddDocument(1, tokens);
-        
-        foreach (var token in tokens)
+        if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
         {
-            _bloomFilter.Add(token.Term);
+            Console.WriteLine($"Loading file: {_currentFile}");
         }
-        
-        Console.WriteLine("Benchmark setup complete.");
+        _documentsIndexed = 0;
+        _tokensProcessed = 0;
+        ProcessMultipleDocuments();
+        if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+        {
+            Console.WriteLine($"Benchmark setup complete. Documents: {_documentsIndexed}, Tokens: {_tokensProcessed}");
+        }
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+    }
+
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _trie = null!;
+        _invertedIndex = null!;
+        _bloomFilter = null!;
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
     }
 
     // One exact search benchmark per data structure, all returning document lists
@@ -75,7 +83,7 @@ public class SearchOperationsBenchmark
     [Arguments("and")]
     [Arguments("or")]
     [Arguments("cat")]
-    [Arguments("bread")]
+    [Arguments("because")]
     [Benchmark(Description = "Trie-Exact")]
     public List<(int docId, int count)> TrieExactSearch(string query)
     {
@@ -86,7 +94,7 @@ public class SearchOperationsBenchmark
     [Arguments("and")]
     [Arguments("or")]
     [Arguments("cat")]
-    [Arguments("bread")]
+    [Arguments("because")]
     [Benchmark(Description = "InvertedIndex-Exact")]
     public List<(int docId, int count)> InvertedIndexExactSearch(string query)
     {
@@ -97,7 +105,7 @@ public class SearchOperationsBenchmark
     [Arguments("and")]
     [Arguments("or")]
     [Arguments("cat")]
-    [Arguments("bread")]
+    [Arguments("because")]
     [Benchmark(Description = "BloomFilter-Exact")]
     public bool BloomFilterExactSearch(string query)
     {
@@ -149,24 +157,46 @@ public class SearchOperationsBenchmark
     {
         return _invertedIndex.PhraseSearch(query);
     }
+    
+    [BenchmarkCategory("PhraseSearch")]
+    [Arguments("he was")]
+    [Arguments("it was")]
+    [Arguments("and it was")]
+    [Arguments("and it")]
+    [Benchmark(Description = "Trie-Phrase")]
+    public List<(int docId, int count)> TriePhraseSearch(string query)
+    {
+        return ((CompactTrieIndex)_trie).PhraseSearch(query);
+    }
 
     // boolean search benchmarks
     [BenchmarkCategory("BooleanSearch")]
     [Arguments("and && or || cat")]
     [Arguments("cat || or && and || it")]
-    [Arguments("and || or || bread || or")]
-    [Arguments("cat || bread")]
+    [Arguments("and || or || because || or")]
+    [Arguments("cat || because")]
     [Benchmark(Description = "Trie-Boolean-Naive")]
     public List<(int docId, int count)> TrieBooleanSearchNaive(string query)
     {
-        return _trie.BooleanSearchNaive(query);
+        return ((CompactTrieIndex)_trie).BooleanSearchNaive(query);
+    }
+    
+    [BenchmarkCategory("BooleanSearch")]
+    [Arguments("and && or || cat")]
+    [Arguments("cat || or && and || it")]
+    [Arguments("and || or || because || or")]
+    [Arguments("cat || because")]
+    [Benchmark(Description = "Trie-Boolean-Bitset")]
+    public List<(int docId, int count)> TrieBooleanSearchBitset(string query)
+    {
+        return ((CompactTrieIndex)_trie).BooleanSearch(query);
     }
 
     [BenchmarkCategory("BooleanSearch")]
     [Arguments("and && or || cat")]
     [Arguments("cat || or && and || it")]
-    [Arguments("and || or || bread || or")]
-    [Arguments("cat || bread")]
+    [Arguments("and || or || because || or")]
+    [Arguments("cat || because")]
     [Benchmark(Description = "InvertedIndex-Boolean-Naive")]
     public List<(int docId, int count)> InvertedIndexBooleanSearchNaive(string query)
     {
@@ -176,11 +206,74 @@ public class SearchOperationsBenchmark
     [BenchmarkCategory("BooleanSearch")]
     [Arguments("and && or || cat")]
     [Arguments("cat || or && and || it")]
-    [Arguments("and || or || bread || or")]
-    [Arguments("cat || bread")]
+    [Arguments("and || or || because || or")]
+    [Arguments("cat || because")]
     [Benchmark(Description = "InvertedIndex-Boolean-Bitset")]
     public List<(int docId, int count)> InvertedIndexBooleanSearchBitset(string query)
     {
         return _invertedIndex.BooleanSearch(query);
     }
-} 
+
+    private void ProcessMultipleDocuments()
+    {
+        using var reader = new StreamReader(_currentFile, Encoding.UTF8);
+        string? line;
+        string? currentTitle = null;
+        var sb = new StringBuilder();
+        int docId = 1;
+        int totalTokens = 0;
+        
+        while ((line = reader.ReadLine()) != null)
+        {
+            if (currentTitle == null)
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    currentTitle = line;
+                }
+            }
+            else if (line.Trim() == "---END.OF.DOCUMENT---")
+            {
+                if (sb.Length > 0)
+                {
+                    string content = sb.ToString().Trim();
+                    var tokens = _analyzer.Analyze(content).ToList();
+                    totalTokens += tokens.Count;
+                    _trie.AddDocument(docId, tokens);
+                    _invertedIndex.AddDocument(docId, tokens);
+                    
+                    foreach (var token in tokens)
+                    {
+                        _bloomFilter.Add(token.Term);
+                    }
+                    
+                    docId++;
+                }
+                currentTitle = null;
+                sb.Clear();
+            }
+            else
+            {
+                sb.AppendLine(line);
+            }
+        }
+        
+        if (currentTitle != null && sb.Length > 0)
+        {
+            string content = sb.ToString().Trim();
+            var tokens = _analyzer.Analyze(content).ToList();
+            totalTokens += tokens.Count;
+            
+            _trie.AddDocument(docId, tokens);
+            _invertedIndex.AddDocument(docId, tokens);
+            
+            foreach (var token in tokens)
+            {
+                _bloomFilter.Add(token.Term);
+            }
+        }
+        
+        _documentsIndexed = docId;
+        _tokensProcessed = totalTokens;
+    }
+}
