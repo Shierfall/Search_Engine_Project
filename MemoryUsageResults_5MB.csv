@@ -1,0 +1,4 @@
+IndexType,MemoryUsage(Bytes)
+CompactTrieIndex,18908921
+SimpleInvertedIndex,5089711
+BloomFilter,1198192

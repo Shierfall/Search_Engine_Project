@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -305,6 +306,8 @@ public class BloomFilter : IBloomFilter
         }
     }
     
+    public BitArray BitArray => new BitArray((int)_filterSize);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void SetBit(ulong bitPosition)
     {

@@ -17,7 +17,15 @@ public class Program
                 case "memory-analysis":
                     Console.WriteLine("Running memory usage analysis across all file sizes...");
                     var indexBenchmark = new IndexConstructionBenchmark();
-                    indexBenchmark.PrintMemoryUsage();
+                    
+                    // orocess each file size
+                    foreach (var size in indexBenchmark.FileSizes)
+                    {
+                        indexBenchmark.FileSize = size;
+                        indexBenchmark.Setup();
+                        indexBenchmark.PrintMemoryUsage();
+                        indexBenchmark.Cleanup();
+                    }
                     break;
                     
                 case "benchmark":

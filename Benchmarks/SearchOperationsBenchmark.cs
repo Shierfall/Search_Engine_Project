@@ -13,19 +13,19 @@ using System.Text;
 namespace SearchEngine.Benchmarks;
 
 [MemoryDiagnoser]
-[WarmupCount(3)]
+[WarmupCount(4)]
 [IterationCount(20)]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 [CsvExporter]
 public class SearchOperationsBenchmark
 {
     private string[] _fileSizes = new[] { "100KB", "1MB", "2MB", "5MB", "10MB", "20MB", "50MB", "100MB", "200MB", "400MB" };
-    private string _basePath = "/home/shierfall/Downloads/texts/"; // path to text files
-    private Analyzer _analyzer = null!;
-    private IExactPrefixIndex _trie = null!;
-    private IFullTextIndex _invertedIndex = null!;
-    private IBloomFilter _bloomFilter = null!;
-    private string _currentFile = null!;
+    private string _basePath = "/zhome/6b/1/188023/Downloads/texts/"; // path to text files
+    private Analyzer _analyzer;
+    private IExactPrefixIndex _trie;
+    private IFullTextIndex _invertedIndex;
+    private IBloomFilter _bloomFilter;
+    private string _currentFile;
     private int _documentsIndexed;
     private int _tokensProcessed;
     
@@ -39,7 +39,7 @@ public class SearchOperationsBenchmark
     };
 
     [ParamsSource(nameof(FileSizes))]
-    public string FileSize { get; set; } = null!;
+    public string FileSize { get; set; }
 
     public IEnumerable<string> FileSizes => _fileSizes;
 
@@ -48,9 +48,11 @@ public class SearchOperationsBenchmark
     {
         _analyzer = new Analyzer(new MinimalTokenizer());
         _trie = new CompactTrieIndex();
+        _trie.SetUseBM25(false);
         _invertedIndex = new InvertedIndex();
-        _bloomFilter = new BloomFilter(2000000, 0.03);
+        _bloomFilter = new BloomFilter(8000000, 0.01); // assuming max 8M unique terms
         _currentFile = Path.Combine(_basePath, $"{FileSize}.txt");
+        _trie.SetUseBM25(false);
         if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
         {
             Console.WriteLine($"Loading file: {_currentFile}");
@@ -70,15 +72,14 @@ public class SearchOperationsBenchmark
     [GlobalCleanup]
     public void Cleanup()
     {
-        _trie = null!;
-        _invertedIndex = null!;
-        _bloomFilter = null!;
+        _trie = null;
+        _invertedIndex = null;
+        _bloomFilter = null;
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
     }
 
-    // One exact search benchmark per data structure, all returning document lists
     [BenchmarkCategory("ExactSearch")]
     [Arguments("and")]
     [Arguments("or")]
@@ -146,7 +147,7 @@ public class SearchOperationsBenchmark
         return _invertedIndex.PrefixSearch(query);
     }
 
-    // phrase search benchmarks - only for InvertedIndex, as requested
+    // phrase search benchmarks
     [BenchmarkCategory("PhraseSearch")]
     [Arguments("he was")]
     [Arguments("it was")]

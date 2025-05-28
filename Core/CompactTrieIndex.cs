@@ -12,7 +12,7 @@ namespace SearchEngine.Core;
 
 public class CompactTrieIndex : IExactPrefixIndex, IFullTextIndex
 {
-    private class TrieNode
+    public class TrieNode
     {
         public int PoolIndex, Offset, Length;
         public TrieNode[] ArrayChildren = new TrieNode[26];
@@ -841,7 +841,6 @@ public class CompactTrieIndex : IExactPrefixIndex, IFullTextIndex
         if (_bitBuilt) return;
         _bitIndex.Clear();
         
-        // Don't acquire a new lock here if we already have one
         bool needsLock = !IsReadLockHeld;
         if (needsLock)
             _trielock.EnterReadLock();
@@ -1014,4 +1013,64 @@ public class CompactTrieIndex : IExactPrefixIndex, IFullTextIndex
         }
         return -1;
     }
+
+    public int TotalNodeCount {
+        get {
+            int count = 0;
+            foreach (var node in GetAllNodes()) {
+                count++;
+            }
+            return count;
+        }
+    }
+
+    public IEnumerable<TrieNode> GetAllNodes()
+    {
+        // breadth-first traversal
+        if (root == null) yield break;
+        
+        var queue = new Queue<TrieNode>();
+        queue.Enqueue(root);
+        
+        while (queue.Count > 0)
+        {
+            var node = queue.Dequeue();
+            yield return node;
+            for (int i = 0; i < 26; i++)
+            {
+                if (node.ArrayChildren != null && node.ArrayChildren[i] != null)
+                {
+                    queue.Enqueue(node.ArrayChildren[i]);
+                }
+            }
+            if (node.DictChildren != null)
+            {
+                foreach (var child in node.DictChildren.Values)
+                {
+                    if (child != null)
+                    {
+                        queue.Enqueue(child);
+                    }
+                }
+            }
+        }
+    }
+
+    public List<string> WordPool => wordPool;
+
+    public Dictionary<string, int> WordToPoolIndex => wordToPoolIndex;
+
+    public int GetMaxDocIdForKey(string key)
+    {
+        if (_bitIndex.TryGetValue(key, out var bitArray))
+        {
+            for (int i = bitArray.Length - 1; i >= 0; i--)
+            {
+                if (bitArray[i]) return i;
+            }
+        }
+        return -1;
+    }
+
+    public int DocumentCount => _totalDocs;
 }

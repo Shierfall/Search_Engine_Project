@@ -10,7 +10,7 @@ namespace SearchEngine.Core;
 public sealed class SimpleInvertedIndex : IFullTextIndex
 {
     // ----- posting list ------------------------------------------------------
-    private sealed class Posting
+    public sealed class Posting
     {
         public int DocId;
         public int Count;
@@ -342,4 +342,17 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
     {
         throw new NotImplementedException();
     }
+
+    public Dictionary<string, List<Posting>> Map => _map;
+
+    public int GetMaxDocIdForKey(string key)
+    {
+        if (_map.TryGetValue(key, out var postings))
+        {
+            return postings.Max(p => p.DocId);
+        }
+        return -1; // No documents found for the key
+    }
+
+    public int DocumentCount => _map.Values.SelectMany(postings => postings).Select(p => p.DocId).Distinct().Count();
 }
