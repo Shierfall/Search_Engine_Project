@@ -496,6 +496,7 @@ public sealed class InvertedIndex : IFullTextIndex
         _bitIndex.Clear();
         
         lock (_mapLock) 
+        {
             foreach (var kv in _map)
             {
                 var word = kv.Key;
@@ -512,7 +513,7 @@ public sealed class InvertedIndex : IFullTextIndex
         }
     }
 
-    private static int BinarySearch(List<int> list, int value)
+        private static int BinarySearch(List<int> list, int value)
     {
         int left = 0, right = list.Count - 1;
         while (left <= right)
@@ -543,7 +544,7 @@ public sealed class InvertedIndex : IFullTextIndex
             {
                 outp.Add(cur[j]);
             }
-                i++;
+            i++;
         }
         
         return outp;
