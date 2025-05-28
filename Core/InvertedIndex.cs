@@ -495,19 +495,21 @@ public sealed class InvertedIndex : IFullTextIndex
         if (_bitBuilt) return;
         _bitIndex.Clear();
         
-        foreach (var kv in _map)
-        {
-            var word = kv.Key;
-            var list = kv.Value;
-            var bits = new BitArray(_nextDocId);
-            foreach (var p in list)
+        lock (_mapLock) 
+            foreach (var kv in _map)
             {
-                if (p.DocId < _nextDocId)
-                    bits[p.DocId] = true;
+                var word = kv.Key;
+                var list = kv.Value;
+                var bits = new BitArray(_nextDocId);
+                foreach (var p in list)
+                {
+                    if (p.DocId < _nextDocId)
+                        bits[p.DocId] = true;
+                }
+                _bitIndex[word] = bits;
             }
-            _bitIndex[word] = bits;
+            _bitBuilt = true;
         }
-        _bitBuilt = true;
     }
 
     private static int BinarySearch(List<int> list, int value)

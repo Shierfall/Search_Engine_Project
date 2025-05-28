@@ -225,7 +225,6 @@ namespace SearchEngine.Benchmarks
                 totalTokens += tokens.Count;
                 documents.Add((docId, tokens));
             }
-
             Parallel.ForEach(documents, doc =>
             {
                 _trie.AddDocument(doc.docId, doc.tokens);
