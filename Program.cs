@@ -66,7 +66,7 @@ builder.Services.AddScoped<IIndexingService, IndexingService>();
 
 // register index implementations
 builder.Services.AddSingleton<IExactPrefixIndex, CompactTrieIndex>();
-builder.Services.AddSingleton<IFullTextIndex, InvertedIndex>();
+builder.Services.AddSingleton<IFullTextIndex, CompactTrieIndex>();
 builder.Services.AddSingleton<IBloomFilter>(provider => new BloomFilter(100000, 0.01));
 
 // add database context and repository services
@@ -233,11 +233,11 @@ using (var scope = app.Services.CreateScope())
 // start the web application
 using (var scope = app.Services.CreateScope())
 {
-    var invertedIndex = scope.ServiceProvider.GetRequiredService<IFullTextIndex>();
-    if (invertedIndex is InvertedIndex bm25Index)
+    var fullTextIndex = scope.ServiceProvider.GetRequiredService<IFullTextIndex>();
+    if (fullTextIndex is CompactTrieIndex trieIndex)
     {
         //change parameters using the /api/search/bm25 endpoint
-        var (k1, b) = bm25Index.GetBM25Params();
+        var (k1, b) = trieIndex.GetBM25Params();
         //Console.WriteLine($"BM25 parameters: k1={k1} b={b}");
         //Console.WriteLine("You can customize these parameters using the /api/search/bm25 endpoint");
     }

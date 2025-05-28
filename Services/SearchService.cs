@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SearchEngine.Analysis;
+using SearchEngine.Core;
 using SearchEngine.Core.Interfaces;
 using SearchEngine.Persistence;
 using SearchEngine.Persistence.Entities;
@@ -14,7 +15,7 @@ public class SearchService : ISearchService
     private readonly IDictionary<string, ISearchOperation> _ops;
     private readonly IDocumentService _docs;
     private readonly Analyzer _analyzer;
-    private readonly IFullTextIndex _invertedIndex;
+    private readonly IFullTextIndex _index; // renamed simply to _index because trie can also be used for full-text search
 
     public SearchService(IEnumerable<ISearchOperation> ops, IDocumentService docs, Analyzer analyzer, IFullTextIndex invertedIndex)
     {
@@ -24,7 +25,7 @@ public class SearchService : ISearchService
                 StringComparer.OrdinalIgnoreCase);
         _docs = docs;
         _analyzer = analyzer;
-        _invertedIndex = invertedIndex;
+        _index = invertedIndex;
     }
 
     public async Task<object> SearchAsync(string operation, string query)
@@ -173,19 +174,27 @@ public class SearchService : ISearchService
     
     public Task SetBM25ParamsAsync(double k1, double b)
     {
-        if (_invertedIndex is InvertedIndex bm25Index)
+        if (_index is CompactTrieIndex trieIndex)
         {
-            bm25Index.SetBM25Params(k1, b);
+            trieIndex.SetBM25Params(k1, b);
+        }
+        else if (_index is InvertedIndex invertedIndex)
+        {
+            invertedIndex.SetBM25Params(k1, b);
         }
         return Task.CompletedTask;
     }
     
     public Task<(double k1, double b)> GetBM25ParamsAsync()
     {
-        if (_invertedIndex is InvertedIndex bm25Index)
+        if (_index is CompactTrieIndex trieIndex)
         {
-            return Task.FromResult(bm25Index.GetBM25Params());
+            return Task.FromResult(trieIndex.GetBM25Params());
         }
-        return Task.FromResult((1.2, 0.75)); // default values if not an InvertedIndex
+        else if (_index is InvertedIndex invertedIndex)
+        {
+            return Task.FromResult(invertedIndex.GetBM25Params());
+        }
+        return Task.FromResult((1.2, 0.75)); // default values if not supported
     }
 }

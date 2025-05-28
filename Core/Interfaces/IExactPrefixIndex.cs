@@ -45,4 +45,9 @@ public interface IExactPrefixIndex
     /// Returns document IDs and counts for an exact search term, similar to inverted index
     /// </summary>
     List<(int docId, int count)> ExactSearchDocuments(string term);
+
+    /// <summary>
+    /// Toggle BM25 ranking on/off.
+    /// </summary>
+    void SetUseBM25(bool useBM25);
 }
