@@ -30,7 +30,7 @@ public class Program
                     
                 case "benchmark":
                     Console.WriteLine("Running Index Construction Benchmark...");
-                    BenchmarkRunner.Run<IndexConstructionBenchmark>(config);
+                    //BenchmarkRunner.Run<IndexConstructionBenchmark>(config);
                     
                     Console.WriteLine("\nRunning Search Operations Benchmark...");
                     BenchmarkRunner.Run<SearchOperationsBenchmark>(config);
