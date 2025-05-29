@@ -62,6 +62,7 @@ namespace SearchEngine.Benchmarks
             _documentsIndexed = 0;
             _tokensProcessed = 0;
             // ProcessMultipleDocuments();
+            ProcessMultipleDocuments();
 
             if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
                 Console.WriteLine($"Benchmark setup complete. Documents: {_documentsIndexed}, Tokens: {_tokensProcessed}");
@@ -253,6 +254,79 @@ namespace SearchEngine.Benchmarks
             }
 
             await Task.CompletedTask; // Simulate async behavior for consistency
+        }
+        
+        private void ProcessMultipleDocuments()
+        {
+            using var reader = new StreamReader(_currentFile, Encoding.UTF8);
+            string? line;
+            string? currentTitle = null;
+            var sb = new StringBuilder();
+            int docCounter = 0;
+            int docId = 1;
+            int tokenCounter = 0;
+
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (currentTitle == null)
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                        currentTitle = line;
+                }
+                else if (line.Trim() == "---END.OF.DOCUMENT---")
+                {
+                    if (sb.Length > 0)
+                    {
+                        string content = sb.ToString().Trim();
+                        docCounter++;
+                        
+                        // Process document
+                        var tokens = _analyzer.Analyze(content).ToList();
+                        _trie.AddDocument(docId++, tokens);
+                        _invertedIndex.AddDocument(docId-1, tokens);
+                        
+                        foreach (var token in tokens)
+                        {
+                            _bloomFilter.Add(token.Term);
+                        }
+                        
+                        tokenCounter += tokens.Count;
+                        
+                        if (docCounter % 100 == 0 && Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+                        {
+                            Console.WriteLine($"Processed {docCounter} documents, {tokenCounter} tokens");
+                        }
+                    }
+
+                    currentTitle = null;
+                    sb.Clear();
+                }
+                else
+                {
+                    sb.AppendLine(line);
+                }
+            }
+            
+            // Process final document if there was no final marker
+            if (currentTitle != null && sb.Length > 0)
+            {
+                string content = sb.ToString().Trim();
+                docCounter++;
+                
+                var tokens = _analyzer.Analyze(content).ToList();
+                _trie.AddDocument(docId++, tokens);
+                _invertedIndex.AddDocument(docId-1, tokens);
+                
+                foreach (var token in tokens)
+                {
+                    _bloomFilter.Add(token.Term);
+                }
+                
+                tokenCounter += tokens.Count;
+            }
+            
+            _documentsIndexed = docCounter;
+            _tokensProcessed = tokenCounter;
         }
     }
 }
