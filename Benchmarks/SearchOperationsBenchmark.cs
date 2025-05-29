@@ -24,7 +24,7 @@ namespace SearchEngine.Benchmarks
     public class SearchOperationsBenchmark
     {
         private string[] _fileSizes = new[] { "100KB", "1MB", "2MB", "5MB", "10MB", "20MB", "50MB", "100MB", "200MB", "400MB" };
-        private string _basePath = "/zhome/6b/1/188023/Downloads/texts/";
+        private string _basePath = "/home/shierfall/Downloads/texts/"; ///zhome/6b/1/188023/Downloads/texts/
         private Analyzer _analyzer;
         private IExactPrefixIndex _trie;
         private IFullTextIndex _invertedIndex;
@@ -262,6 +262,9 @@ namespace SearchEngine.Benchmarks
             string? line;
             string? currentTitle = null;
             var sb = new StringBuilder();
+
+            var documentBatch = new List<(int docId, string content)>();
+            var batchSize = 100; // Same batch size as used in Program.cs
             int docCounter = 0;
             int docId = 1;
             int tokenCounter = 0;
@@ -279,22 +282,19 @@ namespace SearchEngine.Benchmarks
                     {
                         string content = sb.ToString().Trim();
                         docCounter++;
-                        
-                        // Process document
-                        var tokens = _analyzer.Analyze(content).ToList();
-                        _trie.AddDocument(docId++, tokens);
-                        _invertedIndex.AddDocument(docId-1, tokens);
-                        
-                        foreach (var token in tokens)
+
+                        // Add to batch
+                        documentBatch.Add((docId++, content));
+
+                        // Process batch when it reaches the target size
+                        if (documentBatch.Count >= batchSize)
                         {
-                            _bloomFilter.Add(token.Term);
-                        }
-                        
-                        tokenCounter += tokens.Count;
-                        
-                        if (docCounter % 100 == 0 && Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
-                        {
-                            Console.WriteLine($"Processed {docCounter} documents, {tokenCounter} tokens");
+                            var processedTokens = ProcessDocumentBatch(documentBatch);
+                            tokenCounter += processedTokens;
+                            documentBatch.Clear();
+                            
+                            if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+                                Console.WriteLine($"Processed batch of {batchSize} documents (total: {docCounter}, tokens: {tokenCounter})");
                         }
                     }
 
@@ -306,27 +306,52 @@ namespace SearchEngine.Benchmarks
                     sb.AppendLine(line);
                 }
             }
-            
-            // Process final document if there was no final marker
-            if (currentTitle != null && sb.Length > 0)
+
+            // Process final batch if any documents remain
+            if (documentBatch.Count > 0)
             {
-                string content = sb.ToString().Trim();
-                docCounter++;
+                var processedTokens = ProcessDocumentBatch(documentBatch);
+                tokenCounter += processedTokens;
                 
-                var tokens = _analyzer.Analyze(content).ToList();
-                _trie.AddDocument(docId++, tokens);
-                _invertedIndex.AddDocument(docId-1, tokens);
+                if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
+                    Console.WriteLine($"Processed final batch of {documentBatch.Count} documents (total: {docCounter}, tokens: {tokenCounter})");
+            }
+
+            _documentsIndexed = docCounter;
+            _tokensProcessed = tokenCounter;
+        }
+
+        private int ProcessDocumentBatch(List<(int docId, string content)> documentBatch)
+        {
+            int tokenCount = 0;
+            
+            // Process documents in parallel
+            Parallel.ForEach(documentBatch, doc =>
+            {
+                var tokens = _analyzer.Analyze(doc.content).ToList();
                 
+                // Thread-safe updates to indexes
+                lock (_trie)
+                {
+                    _trie.AddDocument(doc.docId, tokens);
+                }
+                
+                lock (_invertedIndex)
+                {
+                    _invertedIndex.AddDocument(doc.docId, tokens);
+                }
+                
+                // Add to bloom filter (should be thread-safe by design or implement locking if needed)
                 foreach (var token in tokens)
                 {
                     _bloomFilter.Add(token.Term);
                 }
                 
-                tokenCounter += tokens.Count;
-            }
+                // Thread-safe increment of token count
+                Interlocked.Add(ref tokenCount, tokens.Count);
+            });
             
-            _documentsIndexed = docCounter;
-            _tokensProcessed = tokenCounter;
+            return tokenCount;
         }
     }
 }
