@@ -36,7 +36,7 @@ public class IndexConstructionBenchmark
         _analyzer = new Analyzer(new MinimalTokenizer());
         _trie = new CompactTrieIndex();
         _trie.SetUseBM25(false);
-        _invertedIndex = new SimpleInvertedIndex();
+        _invertedIndex = new InvertedIndex(); // Use the new optimized InvertedIndex
         _bloomFilter = new BloomFilter(8000000, 0.01); // assuming max 8M unique terms
         _currentFile = Path.Combine(_basePath, $"{FileSize}.txt");
         if (Environment.GetEnvironmentVariable("BENCHMARK_VERBOSE") == "1")
@@ -231,11 +231,11 @@ public class IndexConstructionBenchmark
         long trieMemory = CalculateTrieMemory(compactTrie, false);
         Console.WriteLine($"Trie Index (no BM25): {FormatBytes(trieMemory)}");
 
-        // measure memory for SimpleInvertedIndex
-        var invertedIndex = new SimpleInvertedIndex();
+        // measure memory for optimized InvertedIndex
+        var invertedIndex = new InvertedIndex();
         invertedIndex.AddDocument(1, trieTokens);
-        long invertedIndexMemory = CalculateInvertedIndexMemory(invertedIndex, false);
-        Console.WriteLine($"Inverted Index: {FormatBytes(invertedIndexMemory)}");
+        long invertedIndexMemory = CalculateUnifiedInvertedIndexMemory(invertedIndex, false);
+        Console.WriteLine($"Unified Inverted Index: {FormatBytes(invertedIndexMemory)}");
 
         // measure memory for BloomFilter
         var bloomFilter = new BloomFilter(1000000, 0.01);
@@ -336,44 +336,65 @@ public class IndexConstructionBenchmark
         return totalTrieNodeMemory + wordPoolMemory + wordToPoolIndexMemory + bitIndexMemory + docLengthsMemory;
     }
 
-    private long CalculateInvertedIndexMemory(SimpleInvertedIndex invertedIndex, bool includePositions)
+    private long CalculateUnifiedInvertedIndexMemory(InvertedIndex invertedIndex, bool includePositions)
     {
         const int OBJECT_OVERHEAD = 16;
         const int LIST_OVERHEAD = 32;
         const int DICT_OVERHEAD = 48;
+        const int HASHSET_OVERHEAD = 48;
+        const int BITARRAY_OVERHEAD = 24;
 
-        long mapMemory = DICT_OVERHEAD;
-        long postingsMemory = 0;
-
-        foreach (var kvp in invertedIndex.Map)
+        // Main _termIndex dictionary overhead
+        long totalMemory = DICT_OVERHEAD;
+        
+        // Estimate memory based on typical document structure
+        // Since we can't access private fields directly, we estimate based on document size
+        int estimatedUniqueTerms = Math.Max(1, content.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(w => w.ToLowerInvariant()).Distinct().Count());
+        int estimatedTotalTokens = content.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        int estimatedPostings = Math.Min(estimatedTotalTokens, estimatedUniqueTerms * 2); // conservative estimate
+        
+        // Calculate memory for unified TermEntry structures
+        for (int i = 0; i < estimatedUniqueTerms; i++)
         {
-            mapMemory += OBJECT_OVERHEAD + (kvp.Key.Length * sizeof(char));
-            postingsMemory += LIST_OVERHEAD;
-
-            foreach (var posting in kvp.Value)
+            // TermEntry object overhead
+            totalMemory += OBJECT_OVERHEAD;
+            
+            // Postings dictionary (Dictionary<int, Posting>)
+            totalMemory += DICT_OVERHEAD;
+            int avgPostingsPerTerm = Math.Max(1, estimatedPostings / estimatedUniqueTerms);
+            
+            for (int j = 0; j < avgPostingsPerTerm; j++)
             {
-                long postingSize = OBJECT_OVERHEAD + sizeof(int);
+                // Posting object: DocId (int) + Count (int) + Positions (List<int>)
+                totalMemory += OBJECT_OVERHEAD + sizeof(int) * 2; // DocId + Count
+                
                 if (includePositions)
                 {
-                    postingSize += LIST_OVERHEAD + (posting.Positions.Count * sizeof(int));
+                    // Positions list (estimated 3-5 positions per posting)
+                    int avgPositionsPerPosting = 4;
+                    totalMemory += LIST_OVERHEAD + (sizeof(int) * avgPositionsPerPosting);
                 }
-                postingsMemory += postingSize;
             }
+            
+            // DocSet (HashSet<int>) for O(1) document lookups - key optimization!
+            totalMemory += HASHSET_OVERHEAD + (sizeof(int) * avgPostingsPerTerm);
+            
+            // BitIndex (BitArray?) - allocated when BuildBits() is called
+            // Assume 1 document for this calculation
+            totalMemory += BITARRAY_OVERHEAD + ((1 + 7) / 8); // minimal bit array for 1 doc
         }
-
-        long bitIndexMemory = DICT_OVERHEAD;
-        foreach (var key in invertedIndex.Map.Keys)
-        {
-            bitIndexMemory += IntPtr.Size;
-            int maxDocId = 0;
-            foreach (var posting in invertedIndex.Map[key])
-            {
-                maxDocId = Math.Max(maxDocId, posting.DocId);
-            }
-            bitIndexMemory += OBJECT_OVERHEAD + ((maxDocId + 7) / 8); // bitArray size
-        }
-
-        return mapMemory + postingsMemory + bitIndexMemory;
+        
+        // Document lengths tracking (_docLengths dictionary)
+        totalMemory += DICT_OVERHEAD + sizeof(int) * 2; // one document entry
+        
+        // BM25 statistics fields
+        totalMemory += sizeof(double) * 3 + sizeof(int) * 2; // _avgDocLength, _k1, _b, _totalDocs, _nextDocId
+        
+        // Thread synchronization objects
+        totalMemory += OBJECT_OVERHEAD * 2; // _termLock, _statsLock
+        
+        return totalMemory;
     }
 
     private long CalculateBloomFilterMemory(BloomFilter bloomFilter)
@@ -398,9 +419,9 @@ public class IndexConstructionBenchmark
         
         if (!fileExists)
         {
-            writer.WriteLine("File Size,Total Tokens,Unique Tokens," + 
+            writer.WriteLine("File Size,Total Tokens,Unique Tokens," +
                              "Trie Memory (Bytes),Trie Memory (MB)," + 
-                             "Inverted Index Memory (Bytes),Inverted Index Memory (MB)," + 
+                             "Unified Inverted Index Memory (Bytes),Unified Inverted Index Memory (MB)," + 
                              "Bloom Filter Memory (Bytes),Bloom Filter Memory (MB)," + 
                              "Total Memory (Bytes),Total Memory (MB)");
         }

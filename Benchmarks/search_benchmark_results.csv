@@ -1,0 +1,201 @@
+﻿filesize,datastructure,searchmethod,query,time_ms
+100KB,CompactTrieIndex,Exact,and,1.3209799999999996
+100KB,InvertedIndex,Exact,and,0.2035866666666667
+100KB,CompactTrieIndex,Exact,or,0.0068000000000000005
+100KB,InvertedIndex,Exact,or,0.012666666666666666
+100KB,CompactTrieIndex,Exact,cat,0.009706666666666674
+100KB,InvertedIndex,Exact,cat,0.002573333333333333
+100KB,CompactTrieIndex,Exact,because,0.006379999999999999
+100KB,InvertedIndex,Exact,because,0.003906666666666667
+100KB,CompactTrieIndex,Prefix,an*,0.19382666666666667
+100KB,InvertedIndex,Prefix,an*,0.7675466666666668
+100KB,CompactTrieIndex,Prefix,or*,0.04400666666666667
+100KB,InvertedIndex,Prefix,or*,0.5972133333333333
+100KB,CompactTrieIndex,Prefix,ca*,0.08473333333333334
+100KB,InvertedIndex,Prefix,ca*,0.6997800000000001
+100KB,CompactTrieIndex,Prefix,br*,0.031213333333333336
+100KB,InvertedIndex,Prefix,br*,0.6289
+100KB,CompactTrieIndex,Phrase,it was,0.5833066666666668
+100KB,InvertedIndex,Phrase,it was,0.9565599999999999
+100KB,CompactTrieIndex,Phrase,it was a,0.02298
+100KB,InvertedIndex,Phrase,it was a,0.02036
+100KB,CompactTrieIndex,Phrase,and when,2.0143333333333326
+100KB,InvertedIndex,Phrase,and when,0.040633333333333334
+100KB,CompactTrieIndex,Phrase,or when,0.012893333333333333
+100KB,InvertedIndex,Phrase,or when,0.012666666666666668
+100KB,CompactTrieIndex,Boolean,and && or || cat,1.3057666666666667
+100KB,InvertedIndex,Boolean,and && or || cat,0.22942000000000004
+100KB,CompactTrieIndex,Boolean,cat && because,0.0026399999999999996
+100KB,InvertedIndex,Boolean,cat && because,0.0019333333333333336
+100KB,CompactTrieIndex,Boolean,because && cat || or,0.022940000000000002
+100KB,InvertedIndex,Boolean,because && cat || or,0.013713333333333333
+100KB,CompactTrieIndex,Boolean,or && and,0.013753333333333333
+100KB,InvertedIndex,Boolean,or && and,0.012893333333333331
+100KB,CompactTrieIndex,BooleanNaive,and && or || cat,0.7542333333333333
+100KB,InvertedIndex,BooleanNaive,and && or || cat,0.28213999999999995
+100KB,CompactTrieIndex,BooleanNaive,cat && because,0.05723333333333334
+100KB,InvertedIndex,BooleanNaive,cat && because,0.012486666666666667
+100KB,CompactTrieIndex,BooleanNaive,because && cat || or,0.10329999999999999
+100KB,InvertedIndex,BooleanNaive,because && cat || or,0.04073333333333333
+100KB,CompactTrieIndex,BooleanNaive,or && and,0.03176666666666667
+100KB,InvertedIndex,BooleanNaive,or && and,0.013300000000000001
+1MB,CompactTrieIndex,Exact,and,0.16996666666666668
+1MB,InvertedIndex,Exact,and,0.05787333333333333
+1MB,CompactTrieIndex,Exact,or,0.06958
+1MB,InvertedIndex,Exact,or,0.04676000000000001
+1MB,CompactTrieIndex,Exact,cat,0.0009266666666666665
+1MB,InvertedIndex,Exact,cat,0.00036
+1MB,CompactTrieIndex,Exact,because,0.053246666666666664
+1MB,InvertedIndex,Exact,because,0.05485333333333333
+1MB,CompactTrieIndex,Prefix,an*,0.36091333333333336
+1MB,InvertedIndex,Prefix,an*,6.6292599999999995
+1MB,CompactTrieIndex,Prefix,or*,0.17031333333333334
+1MB,InvertedIndex,Prefix,or*,6.641333333333333
+1MB,CompactTrieIndex,Prefix,ca*,0.5843733333333333
+1MB,InvertedIndex,Prefix,ca*,7.31912
+1MB,CompactTrieIndex,Prefix,br*,0.2587933333333334
+1MB,InvertedIndex,Prefix,br*,7.079446666666667
+1MB,CompactTrieIndex,Phrase,it was,0.7556333333333335
+1MB,InvertedIndex,Phrase,it was,0.2711866666666667
+1MB,CompactTrieIndex,Phrase,it was a,0.19068000000000002
+1MB,InvertedIndex,Phrase,it was a,0.26009333333333334
+1MB,CompactTrieIndex,Phrase,and when,4.37254
+1MB,InvertedIndex,Phrase,and when,0.5527133333333334
+1MB,CompactTrieIndex,Phrase,or when,0.29132
+1MB,InvertedIndex,Phrase,or when,0.13224
+1MB,CompactTrieIndex,Boolean,and && or || cat,5.045153333333334
+1MB,InvertedIndex,Boolean,and && or || cat,0.11948
+1MB,CompactTrieIndex,Boolean,cat && because,0.009626666666666665
+1MB,InvertedIndex,Boolean,cat && because,0.008586666666666668
+1MB,CompactTrieIndex,Boolean,because && cat || or,0.11172666666666667
+1MB,InvertedIndex,Boolean,because && cat || or,0.20314666666666661
+1MB,CompactTrieIndex,Boolean,or && and,0.08253333333333332
+1MB,InvertedIndex,Boolean,or && and,0.14831333333333335
+1MB,CompactTrieIndex,BooleanNaive,and && or || cat,0.15141999999999997
+1MB,InvertedIndex,BooleanNaive,and && or || cat,0.1450533333333333
+1MB,CompactTrieIndex,BooleanNaive,cat && because,0.018246666666666668
+1MB,InvertedIndex,BooleanNaive,cat && because,0.016426666666666666
+1MB,CompactTrieIndex,BooleanNaive,because && cat || or,0.2419666666666666
+1MB,InvertedIndex,BooleanNaive,because && cat || or,0.11090666666666667
+1MB,CompactTrieIndex,BooleanNaive,or && and,0.16174
+1MB,InvertedIndex,BooleanNaive,or && and,0.22756
+2MB,CompactTrieIndex,Exact,and,0.08324666666666666
+2MB,InvertedIndex,Exact,and,0.08944666666666667
+2MB,CompactTrieIndex,Exact,or,0.07488
+2MB,InvertedIndex,Exact,or,0.039
+2MB,CompactTrieIndex,Exact,cat,0.0071933333333333346
+2MB,InvertedIndex,Exact,cat,0.0027933333333333313
+2MB,CompactTrieIndex,Exact,because,0.03705333333333334
+2MB,InvertedIndex,Exact,because,0.030573333333333338
+2MB,CompactTrieIndex,Prefix,an*,2.8913466666666663
+2MB,InvertedIndex,Prefix,an*,9.922653333333335
+2MB,CompactTrieIndex,Prefix,or*,0.13227999999999998
+2MB,InvertedIndex,Prefix,or*,10.17444666666667
+2MB,CompactTrieIndex,Prefix,ca*,0.7522800000000002
+2MB,InvertedIndex,Prefix,ca*,10.242526666666667
+2MB,CompactTrieIndex,Prefix,br*,0.23951333333333338
+2MB,InvertedIndex,Prefix,br*,9.652479999999999
+2MB,CompactTrieIndex,Phrase,it was,0.31902666666666674
+2MB,InvertedIndex,Phrase,it was,0.53916
+2MB,CompactTrieIndex,Phrase,it was a,0.34113333333333323
+2MB,InvertedIndex,Phrase,it was a,0.28836
+2MB,CompactTrieIndex,Phrase,and when,1.265453333333333
+2MB,InvertedIndex,Phrase,and when,0.9082933333333334
+2MB,CompactTrieIndex,Phrase,or when,0.1750266666666667
+2MB,InvertedIndex,Phrase,or when,0.2998599999999999
+2MB,CompactTrieIndex,Boolean,and && or || cat,9.68402
+2MB,InvertedIndex,Boolean,and && or || cat,0.36976000000000003
+2MB,CompactTrieIndex,Boolean,cat && because,0.012000000000000004
+2MB,InvertedIndex,Boolean,cat && because,0.00828
+2MB,CompactTrieIndex,Boolean,because && cat || or,0.20925999999999997
+2MB,InvertedIndex,Boolean,because && cat || or,0.23679333333333338
+2MB,CompactTrieIndex,Boolean,or && and,0.13747333333333334
+2MB,InvertedIndex,Boolean,or && and,0.3339533333333334
+2MB,CompactTrieIndex,BooleanNaive,and && or || cat,0.3945666666666668
+2MB,InvertedIndex,BooleanNaive,and && or || cat,0.3384999999999999
+2MB,CompactTrieIndex,BooleanNaive,cat && because,0.033326666666666664
+2MB,InvertedIndex,BooleanNaive,cat && because,0.03437333333333334
+2MB,CompactTrieIndex,BooleanNaive,because && cat || or,0.43004666666666674
+2MB,InvertedIndex,BooleanNaive,because && cat || or,0.41442000000000007
+2MB,CompactTrieIndex,BooleanNaive,or && and,0.23745333333333332
+2MB,InvertedIndex,BooleanNaive,or && and,0.3621066666666667
+5MB,CompactTrieIndex,Exact,and,0.2218466666666667
+5MB,InvertedIndex,Exact,and,0.14638
+5MB,CompactTrieIndex,Exact,or,0.18255333333333337
+5MB,InvertedIndex,Exact,or,0.09599333333333335
+5MB,CompactTrieIndex,Exact,cat,0.003479999999999999
+5MB,InvertedIndex,Exact,cat,0.002386666666666667
+5MB,CompactTrieIndex,Exact,because,0.08254666666666668
+5MB,InvertedIndex,Exact,because,0.06200666666666667
+5MB,CompactTrieIndex,Prefix,an*,4.559606666666666
+5MB,InvertedIndex,Prefix,an*,17.575493333333334
+5MB,CompactTrieIndex,Prefix,or*,0.25561333333333336
+5MB,InvertedIndex,Prefix,or*,18.073513333333334
+5MB,CompactTrieIndex,Prefix,ca*,1.2169266666666665
+5MB,InvertedIndex,Prefix,ca*,18.43416
+5MB,CompactTrieIndex,Prefix,br*,1.0330133333333331
+5MB,InvertedIndex,Prefix,br*,18.319966666666666
+5MB,CompactTrieIndex,Phrase,it was,0.9344999999999999
+5MB,InvertedIndex,Phrase,it was,2.4841600000000006
+5MB,CompactTrieIndex,Phrase,it was a,0.8088266666666666
+5MB,InvertedIndex,Phrase,it was a,0.7493533333333334
+5MB,CompactTrieIndex,Phrase,and when,2.26018
+5MB,InvertedIndex,Phrase,and when,1.961066666666667
+5MB,CompactTrieIndex,Phrase,or when,0.49226666666666663
+5MB,InvertedIndex,Phrase,or when,0.60886
+5MB,CompactTrieIndex,Boolean,and && or || cat,13.045719999999996
+5MB,InvertedIndex,Boolean,and && or || cat,1.7267133333333333
+5MB,CompactTrieIndex,Boolean,cat && because,0.02145333333333333
+5MB,InvertedIndex,Boolean,cat && because,0.020473333333333336
+5MB,CompactTrieIndex,Boolean,because && cat || or,0.6410399999999999
+5MB,InvertedIndex,Boolean,because && cat || or,1.2794466666666666
+5MB,CompactTrieIndex,Boolean,or && and,0.4003266666666667
+5MB,InvertedIndex,Boolean,or && and,1.2968866666666665
+5MB,CompactTrieIndex,BooleanNaive,and && or || cat,0.6007733333333332
+5MB,InvertedIndex,BooleanNaive,and && or || cat,2.64168
+5MB,CompactTrieIndex,BooleanNaive,cat && because,0.02308666666666666
+5MB,InvertedIndex,BooleanNaive,cat && because,0.04160666666666667
+5MB,CompactTrieIndex,BooleanNaive,because && cat || or,0.7988733333333335
+5MB,InvertedIndex,BooleanNaive,because && cat || or,1.452053333333333
+5MB,CompactTrieIndex,BooleanNaive,or && and,0.5022533333333333
+5MB,InvertedIndex,BooleanNaive,or && and,1.3521866666666669
+10MB,CompactTrieIndex,Exact,and,1.0315133333333333
+10MB,InvertedIndex,Exact,and,0.5212866666666667
+10MB,CompactTrieIndex,Exact,or,0.6256066666666666
+10MB,InvertedIndex,Exact,or,0.34775333333333336
+10MB,CompactTrieIndex,Exact,cat,0.010286666666666666
+10MB,InvertedIndex,Exact,cat,0.010806666666666664
+10MB,CompactTrieIndex,Exact,because,0.41928666666666664
+10MB,InvertedIndex,Exact,because,0.1834466666666667
+10MB,CompactTrieIndex,Prefix,an*,2.9600533333333336
+10MB,InvertedIndex,Prefix,an*,32.371379999999995
+10MB,CompactTrieIndex,Prefix,or*,0.6405399999999999
+10MB,InvertedIndex,Prefix,or*,30.172940000000008
+10MB,CompactTrieIndex,Prefix,ca*,4.649260000000001
+10MB,InvertedIndex,Prefix,ca*,32.47826666666666
+10MB,CompactTrieIndex,Prefix,br*,1.2333133333333337
+10MB,InvertedIndex,Prefix,br*,28.491966666666666
+10MB,CompactTrieIndex,Phrase,it was,2.3168933333333332
+10MB,InvertedIndex,Phrase,it was,2.4583999999999997
+10MB,CompactTrieIndex,Phrase,it was a,3.678313333333334
+10MB,InvertedIndex,Phrase,it was a,2.3609799999999996
+10MB,CompactTrieIndex,Phrase,and when,6.202546666666666
+10MB,InvertedIndex,Phrase,and when,5.01478
+10MB,CompactTrieIndex,Phrase,or when,1.8584733333333332
+10MB,InvertedIndex,Phrase,or when,1.4407133333333337
+10MB,CompactTrieIndex,Boolean,and && or || cat,27.845906666666664
+10MB,InvertedIndex,Boolean,and && or || cat,8.455446666666667
+10MB,CompactTrieIndex,Boolean,cat && because,0.03782666666666667
+10MB,InvertedIndex,Boolean,cat && because,0.05264666666666667
+10MB,CompactTrieIndex,Boolean,because && cat || or,3.8260666666666667
+10MB,InvertedIndex,Boolean,because && cat || or,7.211786666666666
+10MB,CompactTrieIndex,Boolean,or && and,1.8004133333333334
+10MB,InvertedIndex,Boolean,or && and,9.11998
+10MB,CompactTrieIndex,BooleanNaive,and && or || cat,2.12074
+10MB,InvertedIndex,BooleanNaive,and && or || cat,9.690646666666664
+10MB,CompactTrieIndex,BooleanNaive,cat && because,0.05233999999999999
+10MB,InvertedIndex,BooleanNaive,cat && because,0.060399999999999995
+10MB,CompactTrieIndex,BooleanNaive,because && cat || or,2.582966666666666
+10MB,InvertedIndex,BooleanNaive,because && cat || or,8.234253333333333
+10MB,CompactTrieIndex,BooleanNaive,or && and,1.5788466666666667
+10MB,InvertedIndex,BooleanNaive,or && and,7.763720000000001
