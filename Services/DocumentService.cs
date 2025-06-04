@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SearchEngine.Analysis;
 using SearchEngine.Persistence;
 using SearchEngine.Persistence.Entities;
@@ -8,19 +11,28 @@ using SearchEngine.Services.Interfaces;
 
 namespace SearchEngine.Services;
 
+/// <summary>
+/// Implementation of IDocumentService
+/// </summary>
 public class DocumentService : IDocumentService
 {
+    private readonly SearchEngineContext _context;
+    private readonly SearchEngine.Persistence.DocumentTermRepository _terms;
+    private readonly ILogger<DocumentService> _logger;
     private readonly DocumentRepository _docs;
-    private readonly DocumentTermRepository _terms;
     private readonly DocumentCompressionService _compressionService;
 
     public DocumentService(
+        SearchEngineContext context,
+        SearchEngine.Persistence.DocumentTermRepository terms,
+        ILogger<DocumentService> logger,
         DocumentRepository docs, 
-        DocumentTermRepository terms,
         DocumentCompressionService compressionService)
     {
-        _docs = docs;
+        _context = context;
         _terms = terms;
+        _logger = logger;
+        _docs = docs;
         _compressionService = compressionService;
     }
 
@@ -75,7 +87,6 @@ public class DocumentService : IDocumentService
 
     public async Task<List<Token>> GetIndexedTokensAsync(int docId)
     {
-        
         var termMap = await _terms.GetByDocumentAsync(docId);
         var tokens = new List<Token>();
         
@@ -91,8 +102,8 @@ public class DocumentService : IDocumentService
                 {
                     Term = term,
                     Position = position,
-                    StartOffset = 0,  // we don't have this info in ze database
-                    EndOffset = 0     // we don't have this info in ze database
+                    StartOffset = 0,  // we don't have this info in the database
+                    EndOffset = 0     // we don't have this info in the database
                 });
             }
         }
@@ -102,6 +113,6 @@ public class DocumentService : IDocumentService
 
     public Task DeleteTermsAsync(int docId)
     {
-        return _terms.DeleteByDocumentAsync(docId);
+        return _terms.DeleteTermsForDocumentAsync(docId);
     }
 }

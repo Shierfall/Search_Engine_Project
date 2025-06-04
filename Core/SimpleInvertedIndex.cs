@@ -27,11 +27,11 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
     // ----- fields ------------------------------------------------------------
     private readonly Dictionary<string, List<Posting>> _map = new(StringComparer.Ordinal);
     private readonly Dictionary<string, BitArray> _bitIndex = new(StringComparer.Ordinal);
-    
+
     private bool _bitBuilt;
     private int _nextDocId;
     private bool _delta = true;
-    
+
     public void SetDeltaEncoding(bool on) => _delta = on;
 
     // ------------------------------------------------------------------------
@@ -56,7 +56,7 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
             }
         }
         _bitBuilt = false;
-    
+
         if (docId >= _nextDocId)
         {
             _nextDocId = docId + 1;
@@ -82,7 +82,7 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
         _nextDocId = 0;         // reset doc-id counter
         _bitBuilt = false;      // mark bits as needing rebuild
     }
-    
+
     // ------------------------------------------------------------------------
     public List<(int docId, int count)> ExactSearch(string searchStr)
     {
@@ -92,12 +92,12 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
         }
 
         var result = new List<(int docId, int count)>(postings.Count);
-        
+
         foreach (var posting in postings)
         {
             result.Add((posting.DocId, posting.Count));
         }
-        
+
         return result;
     }
 
@@ -112,22 +112,22 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
 
         var candidates = first.ToDictionary(p => p.DocId, p => new List<int>(p.Positions));
         var matchCounts = new Dictionary<int, int>();
-                                            
+
         for (int i = 1; i < words.Length; i++)
         {
             if (!_map.TryGetValue(words[i], out var next)) return new List<(int docId, int count)>();
             var nextSet = new Dictionary<int, List<int>>();
             var nextMatchCounts = new Dictionary<int, int>();
-            
+
             foreach (var p in next)
             {
                 if (!candidates.TryGetValue(p.DocId, out var prev)) continue;
                 var valid = MergePositions(prev, p.Positions);
-                if (valid.Count > 0) 
+                if (valid.Count > 0)
                 {
                     nextSet[p.DocId] = valid;
                     // Track match count
-                    nextMatchCounts[p.DocId] = matchCounts.TryGetValue(p.DocId, out var prevCount) ? 
+                    nextMatchCounts[p.DocId] = matchCounts.TryGetValue(p.DocId, out var prevCount) ?
                         prevCount + 1 : 1;
                 }
             }
@@ -135,11 +135,11 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
             matchCounts = nextMatchCounts;
             if (candidates.Count == 0) return new List<(int docId, int count)>();
         }
-        
+
         // preallocation results list
         var candidateKeys = candidates.Keys.ToList();
         var results = new List<(int docId, int count)>(candidateKeys.Count);
-        
+
         // manually build sorted results instead of using LINQ
         // this simulates OrderByDescending but with better performance
         var orderedIds = new List<(int docId, int count)>(candidateKeys.Count);
@@ -148,10 +148,10 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
             var count = matchCounts.TryGetValue(id, out var c) ? c : 0;
             orderedIds.Add((id, count));
         }
-        
+
         // simple insertion sort (faster than LINQ OrderByDescending for small lists)
         orderedIds.Sort((a, b) => b.count.CompareTo(a.count));
-        
+
         return orderedIds;
     }
 
@@ -161,11 +161,11 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
 
         BitArray? acc = null;
         string? op = null;
-        
+
         foreach (var token in expr.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             if (token is "&&" or "||") { op = token; continue; }
-            
+
             _bitIndex.TryGetValue(token, out var bits);
             bits ??= new BitArray(_nextDocId); // all false
 
@@ -182,13 +182,13 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
         int estimatedMatches = 0;
         for (int i = 0; i < acc.Length; i++)
             if (acc[i]) estimatedMatches++;
-            
+
         var result = new List<(int docId, int count)>(estimatedMatches);
         for (int i = 0; i < acc.Length; i++)
         {
-            if (acc[i]) result.Add((i, 1)); 
+            if (acc[i]) result.Add((i, 1));
         }
-        
+
         return result;
     }
 
@@ -249,7 +249,7 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
         // estimate capacity to avoid resizing
         var estimatedMatches = Math.Min(20, _map.Count / 10); // rough guess
         var results = new List<(string word, List<int> docIds)>(estimatedMatches);
-        
+
         foreach (var kvp in _map)
         {
             if (kvp.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
@@ -314,7 +314,7 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
         }
 
         if (docSets.Count == 0) return new List<(int docId, int count)>();
-        
+
         var result = docSets[0];
         for (int j = 0; j < operators.Count; j++)
         {
@@ -334,7 +334,12 @@ public sealed class SimpleInvertedIndex : IFullTextIndex
         {
             finalResults.Add((docId, 1));
         }
-        
+
         return finalResults;
     }
-} 
+
+    public void AddDocumentsBatch(IEnumerable<(int docId, IEnumerable<Token> tokens)> documents)
+    {
+        throw new NotImplementedException();
+    }
+}

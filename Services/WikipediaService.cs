@@ -29,6 +29,9 @@
             
             try
             {
+                // ensure database mode is enabled
+                _fileContentService.EnableDatabaseMode();
+                
                 string json = await _httpClient.GetStringAsync(url);
                 using JsonDocument doc = JsonDocument.Parse(json);
                 var rootElement = doc.RootElement;

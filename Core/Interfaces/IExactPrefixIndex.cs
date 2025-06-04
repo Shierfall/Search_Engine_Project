@@ -13,6 +13,12 @@ public interface IExactPrefixIndex
     /// Recursively removes data from <paramref name="docId"/> to data structure via <paramref name="tokens"/> stream
     ///</summary> 
     void RemoveDocument(int docId, IEnumerable<Token> tokens);
+    
+    ///<summary>
+    /// Adds multiple documents in a batch operation 
+    ///</summary>
+    void AddDocumentsBatch(IEnumerable<(int docId, IEnumerable<Token> tokens)> documents);
+    
     ///<summary> 
     ///returns true/false for <param name="term">word/string</param>
     ///</summary>

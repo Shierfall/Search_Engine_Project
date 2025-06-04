@@ -9,10 +9,20 @@ public class SearchEngineContext : DbContext
 {
     public DbSet<DocumentEntity> Documents { get; set; }
     public DbSet<DocumentTermEntity> DocumentTerms { get; set; }
+    public SearchEngineContext() { }
 
     public SearchEngineContext(DbContextOptions<SearchEngineContext> options)
         : base(options)
+    { }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
+        if (!optionsBuilder.IsConfigured)
+        {
+            // fallback for design-time
+            optionsBuilder.UseSqlServer(
+                "Server=.;Database=SearchEngine;Trusted_Connection=True;");
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -26,7 +36,7 @@ public class SearchEngineContext : DbContext
             b.Property(d => d.Title)
              .IsRequired()
              .HasMaxLength(200);
-             
+
             b.Property(d => d.CompressedContent)
              .IsRequired(false);
 

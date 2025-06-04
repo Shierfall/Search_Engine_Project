@@ -1,121 +1,202 @@
-using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Data;
+using Microsoft.Data.SqlClient;
 using System.Linq;
-using EFCore.BulkExtensions;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SearchEngine.Analysis;
 using SearchEngine.Persistence.Entities;
 using System.Text.Json;
+
 namespace SearchEngine.Persistence;
 
+/// <summary>
+/// Repository class for managing document terms in the database
+/// </summary>
 public class DocumentTermRepository
 {
     private readonly SearchEngineContext _context;
+    private readonly ILogger<DocumentTermRepository> _logger;
+    private const int SQL_BATCH_SIZE = 5000; // Maximum batch size for SQL Server bulk operations
 
-    public DocumentTermRepository(SearchEngineContext context)
+    public DocumentTermRepository(SearchEngineContext context, ILogger<DocumentTermRepository> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     /// <summary>
-    /// Bulk‐upsert one row per distinct term for this document
-    /// serializing all positions into JSON.
+    /// Bulk upsert terms for a document using optimized bulk operations
     /// </summary>
-    public async Task BulkUpsertTermsAsync(int docId, IEnumerable<Token> tokens)
+    public async Task BulkUpsertTermsAsync(int documentId, IEnumerable<Token> tokens)
     {
-        //  build the list of DocumentTermEntity
-        var batch = tokens
+        if (!tokens.Any())
+            return;
+            
+        // Delete existing terms for this document
+        await _context.Database.ExecuteSqlRawAsync(
+            "DELETE FROM DocumentTerms WHERE DocumentId = {0}", documentId);
+            
+        var termsList = tokens.ToList();
+        
+        // Use high-performance bulk insert when possible
+        if (_context.Database.IsSqlServer() && termsList.Count > 100)
+        {
+            await BulkInsertSqlServerAsync(documentId, termsList);
+        }
+        else
+        {
+            await BulkInsertEfCoreAsync(documentId, termsList);
+        }
+    }
+    
+    /// <summary>
+    /// Optimized bulk insert using SqlBulkCopy for SQL Server
+    /// </summary>
+    private async Task BulkInsertSqlServerAsync(int documentId, List<Token> tokens)
+    {
+        var connectionString = _context.Database.GetConnectionString();
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            _logger.LogWarning("Connection string not available, falling back to EF Core bulk insert");
+            await BulkInsertEfCoreAsync(documentId, tokens);
+            return;
+        }
+        
+        using var dataTable = new DataTable();
+        dataTable.Columns.Add("DocumentId", typeof(int));
+        dataTable.Columns.Add("Term", typeof(string));
+        dataTable.Columns.Add("PositionsJson", typeof(string));
+        
+        // Group tokens by term for position lists
+        var groupedTerms = tokens
             .GroupBy(t => t.Term)
-            .Select(g => new DocumentTermEntity
+            .Select(g => new
             {
-                DocumentId = docId,
                 Term = g.Key,
-                PositionsJson = JsonSerializer.Serialize(g.Select(t => t.Position))
+                Positions = g.Select(t => t.Position).ToList()
+            });
+            
+        foreach (var term in groupedTerms)
+        {
+            var positionsJson = JsonSerializer.Serialize(term.Positions);
+            dataTable.Rows.Add(documentId, term.Term, positionsJson);
+        }
+        
+        using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            using var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction)
+            {
+                DestinationTableName = "DocumentTerms",
+                BatchSize = SQL_BATCH_SIZE,
+                BulkCopyTimeout = 120 // seconds
+            };
+            
+            bulkCopy.ColumnMappings.Add("DocumentId", "DocumentId");
+            bulkCopy.ColumnMappings.Add("Term", "Term");
+            bulkCopy.ColumnMappings.Add("PositionsJson", "PositionsJson");
+            
+            await bulkCopy.WriteToServerAsync(dataTable);
+            transaction.Commit();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during bulk insert of {Count} terms for document {DocumentId}", 
+                tokens.Count, documentId);
+            transaction.Rollback();
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Fallback bulk insert using EF Core batching
+    /// </summary>
+    private async Task BulkInsertEfCoreAsync(int documentId, List<Token> tokens)
+    {
+        // Group tokens by term
+        var termGroups = tokens
+            .GroupBy(t => t.Term)
+            .Select(g => new
+            {
+                Term = g.Key,
+                Positions = g.Select(t => t.Position).ToList()
             })
             .ToList();
-
-        //  disable change‐tracking for max throughput
-        _context.ChangeTracker.AutoDetectChangesEnabled = false;
-        _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-        //  single bulk upsert call (INSERT or UPDATE as needed)
-        await _context.BulkInsertOrUpdateAsync(batch);
-
-        //  restore tracking
-        _context.ChangeTracker.AutoDetectChangesEnabled = true;
-        _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
-    }
-
-    /// <summary>
-    /// Bulk load all term‐rows from the db in one go
-    /// </summary>
-    public async Task<List<DocumentTermEntity>> LoadAllTermsAsync()
-    {
-        return await _context.DocumentTerms
-            .AsNoTracking()
-            .ToListAsync();
-    }
-    /// <summary>
-    /// Group the tokens by term, serialize their positions,
-    /// and insert or update a single row per (docId,term).
-    /// </summary>
-    public async Task UpsertManyAsync(int docId, IEnumerable<Token> tokens)
-    {
-        // group positions in memory
-        var groups = tokens
-          .GroupBy(t => t.Term)
-          .Select(g => new DocumentTermEntity
-          {
-              DocumentId = docId,
-              Term = g.Key,
-              PositionsJson = JsonSerializer.Serialize(g.Select(t => t.Position))
-          })
-          .ToList();
-
-        foreach (var termRow in groups)
+            
+        // Process in chunks to avoid excessive memory usage
+        var chunks = termGroups
+            .Select((term, index) => new { term, index })
+            .GroupBy(x => x.index / SQL_BATCH_SIZE)
+            .Select(g => g.Select(x => x.term).ToList())
+            .ToList();
+            
+        foreach (var chunk in chunks)
         {
-            var existing = await _context.DocumentTerms
-              .FindAsync(termRow.DocumentId, termRow.Term);
-
-            if (existing == null)
+            var entities = chunk.Select(term => new DocumentTermEntity
             {
-                _context.DocumentTerms.Add(termRow);
-            }
-            else
-            {
-                existing.PositionsJson = termRow.PositionsJson;
-            }
-        }
-
-        await _context.SaveChangesAsync();
-    }
-
-    /// <summary>
-    /// Delete *all* term rows for a document.
-    /// </summary>
-    public async Task DeleteByDocumentAsync(int docId)
-    {
-        var rows = await _context.DocumentTerms
-          .Where(t => t.DocumentId == docId)
-          .ToListAsync();
-
-        if (rows.Any())
-        {
-            _context.DocumentTerms.RemoveRange(rows);
+                DocumentId = documentId,
+                Term = term.Term,
+                PositionsJson = JsonSerializer.Serialize(term.Positions)
+            }).ToList();
+            
+            await _context.DocumentTerms.AddRangeAsync(entities);
             await _context.SaveChangesAsync();
+            
+            // Clear the context to prevent memory issues
+            _context.ChangeTracker.Clear();
         }
+    }
+    
+    /// <summary>
+    /// Delete all terms for a document
+    /// </summary>
+    public async Task DeleteTermsForDocumentAsync(int documentId)
+    {
+        await _context.Database.ExecuteSqlRawAsync(
+            "DELETE FROM DocumentTerms WHERE DocumentId = {0}", documentId);
+    }
+    
+    /// <summary>
+    /// Delete all terms from the database
+    /// </summary>
+    public async Task DeleteAllTermsAsync()
+    {
+        await _context.Database.ExecuteSqlRawAsync("DELETE FROM DocumentTerms");
+    }
+    
+    /// <summary>
+    /// Get all terms for a document
+    /// </summary>
+    public async Task<Dictionary<string, List<int>>> GetByDocumentAsync(int documentId)
+    {
+        var terms = await _context.DocumentTerms
+            .AsNoTracking()
+            .Where(t => t.DocumentId == documentId)
+            .ToListAsync();
+            
+        var result = new Dictionary<string, List<int>>();
+        
+        foreach (var term in terms)
+        {
+            // Deserialize the positions from JSON
+            var positions = JsonSerializer.Deserialize<List<int>>(term.PositionsJson) ?? new List<int>();
+            result[term.Term] = positions;
+        }
+        
+        return result;
     }
 
     /// <summary>
-    /// Load term rows for a doc and deserialize positions.
+    /// Delete all terms for a document - alias for DeleteTermsForDocumentAsync
     /// </summary>
-    public async Task<Dictionary<string, List<int>>> GetByDocumentAsync(int docId)
+    public Task DeleteByDocumentAsync(int documentId)
     {
-        return await _context.DocumentTerms
-          .AsNoTracking()
-          .Where(t => t.DocumentId == docId)
-          .ToDictionaryAsync(
-            t => t.Term,
-            t => JsonSerializer.Deserialize<List<int>>(t.PositionsJson)!);
+        return DeleteTermsForDocumentAsync(documentId);
     }
 }

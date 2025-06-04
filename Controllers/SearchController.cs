@@ -17,50 +17,55 @@ namespace SearchEngine.Controllers
         private readonly ISearchService _searchService;
         private readonly FileContentService _fileContentService;
         private readonly IWikipediaService _wikipediaService;
+        private readonly IIndexingService _indexingService;
 
         public SearchController(
             ISearchService searchService, 
             FileContentService fileContentService,
-            IWikipediaService wikipediaService)
+            IWikipediaService wikipediaService,
+            IIndexingService indexingService)
         {
             _searchService = searchService;
             _fileContentService = fileContentService;
             _wikipediaService = wikipediaService;
+            _indexingService = indexingService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Search([FromQuery] string q)
+    [HttpGet]
+    public async Task<IActionResult> Search([FromQuery] string q)
+    {
+        if (string.IsNullOrWhiteSpace(q))
         {
-            if (string.IsNullOrWhiteSpace(q))
-            {
-                return BadRequest("Query parameter 'q' is required");
-            }
-
-            try
-            {
-                var stopwatch = Stopwatch.StartNew();
-                var operationType = DetermineSearchOperation(q);
-                var searchQuery = NormalizeQuery(q, operationType);
-                
-                var results = await _searchService.SearchAsync(operationType, searchQuery);
-                stopwatch.Stop();
-
-                var response = new
-                {
-                    results = await FormatResultsAsync(results, q),
-                    totalCount = GetResultCount(results),
-                    searchTime = stopwatch.Elapsed.TotalSeconds,
-                    query = q,
-                    operation = operationType
-                };
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Search error: {ex.Message}");
-            }
+            return BadRequest("Query parameter 'q' is required");
         }
+
+        try
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var operationType = DetermineSearchOperation(q);
+            var searchQuery = NormalizeQuery(q, operationType);
+            
+            Console.WriteLine($"Search request: '{q}', operation: '{operationType}', normalized: '{searchQuery}' (using CompactTrieIndex)");
+            
+            var results = await _searchService.SearchAsync(operationType, searchQuery);
+            stopwatch.Stop();
+
+            var response = new
+            {
+                results = await FormatResultsAsync(results, q),
+                totalCount = GetResultCount(results),
+                searchTime = stopwatch.Elapsed.TotalSeconds,
+                query = q,
+                operation = operationType
+            };
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Search error: {ex.Message}");
+        }
+    }
 
         [HttpGet("check")]
         public async Task<IActionResult> CheckExists([FromQuery] string term)
@@ -338,7 +343,7 @@ namespace SearchEngine.Controllers
                 }
                 
                 // log incoming request
-                Console.WriteLine($"Autocomplete request for query: '{q}', using last word: '{lastWord}'");
+                Console.WriteLine($"Autocomplete request for query: '{q}', using last word: '{lastWord}' (using CompactTrieIndex)");
                 
                 // use the autocomplete operation with just the last word
                 var results = await _searchService.SearchAsync("autocomplete", lastWord ?? "");
@@ -379,52 +384,54 @@ namespace SearchEngine.Controllers
             }
         }
 
-        [HttpGet("bm25")]
-        public async Task<IActionResult> BM25Search([FromQuery] string q, [FromQuery] double? k1, [FromQuery] double? b)
+    [HttpGet("bm25")]
+    public async Task<IActionResult> BM25Search([FromQuery] string q, [FromQuery] double? k1, [FromQuery] double? b)
+    {
+        if (string.IsNullOrWhiteSpace(q))
         {
-            if (string.IsNullOrWhiteSpace(q))
-            {
-                return BadRequest("Query parameter 'q' is required");
-            }
-
-            try
-            {
-                var stopwatch = Stopwatch.StartNew();
-                
-                // set BM25 parameters if provided
-                if (k1.HasValue || b.HasValue)
-                {
-                    await _searchService.SetBM25ParamsAsync(k1 ?? 1.2, b ?? 0.75);
-                }
-                
-                // always use the fulltext operation for BM25
-                var results = await _searchService.SearchAsync("fulltext", q);
-                stopwatch.Stop();
-                
-                // get current BM25 parameters
-                var bm25Params = await _searchService.GetBM25ParamsAsync();
-
-                var response = new
-                {
-                    results = await FormatResultsAsync(results, q),
-                    totalCount = GetResultCount(results),
-                    searchTime = stopwatch.Elapsed.TotalSeconds,
-                    query = q,
-                    operation = "BM25",
-                    parameters = new
-                    {
-                        k1 = bm25Params.k1,
-                        b = bm25Params.b
-                    }
-                };
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"BM25 search error: {ex.Message}");
-            }
+            return BadRequest("Query parameter 'q' is required");
         }
+
+        try
+        {
+            var stopwatch = Stopwatch.StartNew();
+            
+            // set BM25 parameters if provided
+            if (k1.HasValue || b.HasValue)
+            {
+                await _searchService.SetBM25ParamsAsync(k1 ?? 1.2, b ?? 0.75);
+            }
+            
+            Console.WriteLine($"BM25 search request: '{q}', params: k1={k1 ?? 1.2}, b={b ?? 0.75} (using CompactTrieIndex)");
+            
+            // always use the fulltext operation for BM25
+            var results = await _searchService.SearchAsync("fulltext", q);
+            stopwatch.Stop();
+            
+            // get current BM25 parameters
+            var bm25Params = await _searchService.GetBM25ParamsAsync();
+
+            var response = new
+            {
+                results = await FormatResultsAsync(results, q),
+                totalCount = GetResultCount(results),
+                searchTime = stopwatch.Elapsed.TotalSeconds,
+                query = q,
+                operation = "BM25",
+                parameters = new
+                {
+                    k1 = bm25Params.k1,
+                    b = bm25Params.b
+                }
+            };
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"BM25 search error: {ex.Message}");
+        }
+    }
 
         [HttpPost("wikipedia")]
         public async Task<IActionResult> AddFromWikipedia([FromQuery] string title)
@@ -436,12 +443,37 @@ namespace SearchEngine.Controllers
 
             try
             {
+                // ensure database mode is enabled before adding Wikipedia content
+                _fileContentService.EnableDatabaseMode();
+                
                 await _wikipediaService.AddFromWikipediaAsync(title);
                 return Ok(new { message = $"Successfully added Wikipedia article: {title}" });
             }
             catch (Exception ex)
             {
                 return BadRequest($"Error adding Wikipedia article: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("document/{docId:int}")]
+        public async Task<IActionResult> DeleteDocument(int docId)
+        {
+            try
+            {
+                var result = await _indexingService.RemoveDocumentAsync(docId);
+                
+                if (result)
+                {
+                    return Ok(new { message = $"Document {docId} successfully deleted" });
+                }
+                else
+                {
+                    return NotFound(new { message = $"Document {docId} not found" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = $"Error deleting document: {ex.Message}" });
             }
         }
     }

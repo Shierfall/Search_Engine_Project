@@ -6,6 +6,9 @@ public interface IFullTextIndex
     void RemoveDocument(int docId, IEnumerable<Token> tokens);
     void Clear();
 
+    // batch processing method
+    void AddDocumentsBatch(IEnumerable<(int docId, IEnumerable<Token> tokens)> documents);
+
     // queries -----------------------------------------------------------------
     List<(int docId, int count)> ExactSearch(string term);          // exact word
     List<(int docId, int count)> PhraseSearch(string phrase);       // "foo bar"

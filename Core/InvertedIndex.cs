@@ -1,7 +1,12 @@
+namespace SearchEngine.Core;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
 using SearchEngine.Analysis;
 using SearchEngine.Core.Interfaces;
 
@@ -37,7 +42,12 @@ public sealed class InvertedIndex : IFullTextIndex
     private bool _bitBuilt;
     private int _nextDocId;
 
-    private bool _delta = true;            
+    private bool _delta = true;
+    // lock objects for thread safety
+    private readonly object _mapLock = new object();
+    private readonly object _statsLock = new object();
+    private readonly object _bitsLock = new object();
+            
     public void SetDeltaEncoding(bool on) => _delta = on;
     
     // methods to tune BM25 parameters
@@ -52,6 +62,15 @@ public sealed class InvertedIndex : IFullTextIndex
     
     public (double k1, double b) GetBM25Params() => (_k1, _b);
 
+    private bool _useBM25 = true; // default to using BM25
+
+    public void SetBM25Enabled(bool enabled)
+    {
+        _useBM25 = enabled;
+    }
+
+    public bool IsBM25Enabled() => _useBM25;
+
     // ------------------------------------------------------------------------
     public void AddDocument(int docId, IEnumerable<Token> tokens)
     {
@@ -59,47 +78,201 @@ public sealed class InvertedIndex : IFullTextIndex
         var tokenList = tokens.ToList();
         int docLength = tokenList.Count;
         
-        // update document length stats
-        if (_docLengths.ContainsKey(docId))
+        // Update document length stats (thread-safe)
+        lock (_statsLock)
         {
-            // if we are updating a document, first remove its old length from the average
-            _avgDocLength = (_avgDocLength * _totalDocs - _docLengths[docId]) / (_totalDocs - 1);
-            _docLengths[docId] = docLength;
-        }
-        else
-        {
-            _docLengths[docId] = docLength;
-            _totalDocs++;
-        }
-        
-        // recalculate average document length
-        _avgDocLength = _docLengths.Values.Sum() / (double)_totalDocs;
-
-        foreach (var t in tokenList)
-        {
-            if (string.IsNullOrEmpty(t.Term)) continue;
-
-            if (!_map.TryGetValue(t.Term, out var list))
-                _map[t.Term] = list = new();
-
-            if (list.Count > 0 && list[^1].DocId == docId)
+            // update document length stats
+            if (_docLengths.ContainsKey(docId))
             {
-                int last = list[^1].Positions[^1];
-                list[^1].Positions.Add(_delta ? t.Position - last : t.Position);
-                list[^1].Count++;
+                // if we are updating a document, first remove its old length from the average
+                _avgDocLength = (_avgDocLength * _totalDocs - _docLengths[docId]) / (_totalDocs - 1);
+                _docLengths[docId] = docLength;
             }
             else
             {
-                list.Add(new Posting(docId, t.Position));
+                _docLengths[docId] = docLength;
+                _totalDocs++;
+            }
+            
+            // recalculate average document length
+            _avgDocLength = _docLengths.Values.Sum() / (double)_totalDocs;
+            
+            if (docId >= _nextDocId)
+            {
+                _nextDocId = docId + 1;
             }
         }
-        _bitBuilt = false;
-    
-        if (docId >= _nextDocId)
+
+        // group tokens by term to reduce lock contention
+        var termGroups = tokenList
+            .Where(t => !string.IsNullOrEmpty(t.Term))
+            .GroupBy(t => t.Term)
+            .ToList();
+
+        // process each term group
+        foreach (var group in termGroups)
         {
-            _nextDocId = docId + 1;
+            string term = group.Key;
+            var positions = group.Select(t => t.Position).OrderBy(p => p).ToList();
+            
+            lock (_mapLock)
+            {
+                if (!_map.TryGetValue(term, out var list))
+                    _map[term] = list = new();
+
+                if (list.Count > 0 && list[^1].DocId == docId)
+                {
+                    // update existing posting
+                    int lastPos = list[^1].Positions[^1];
+                    foreach (var pos in positions)
+                    {
+                        list[^1].Positions.Add(_delta ? pos - lastPos : pos);
+                        lastPos = pos;
+                    }
+                    list[^1].Count += positions.Count;
+                }
+                else
+                {
+                    // Create a new posting with first position
+                    var posting = new Posting(docId, positions[0]);
+                    
+                    // Add remaining positions
+                    for (int i = 1; i < positions.Count; i++)
+                    {
+                        int lastPos = posting.Positions[^1];
+                        posting.Positions.Add(_delta ? positions[i] - lastPos : positions[i]);
+                        posting.Count++;
+                    }
+                    
+                    list.Add(posting);
+                }
+            }
         }
-        BuildBits();
+
+        lock (_bitsLock)
+        {
+            _bitBuilt = false;
+            BuildBits();
+        }
+    }
+
+    // support for batch document processing
+    public void AddDocumentsBatch(IEnumerable<(int docId, IEnumerable<Token> tokens)> documents)
+    {
+        // process documents in parallel
+        var termPostingsMap = new ConcurrentDictionary<string, ConcurrentDictionary<int, List<int>>>();
+        var docLengthsMap = new ConcurrentDictionary<int, int>();
+
+        // first process tokens in parallel to build term postings
+        Parallel.ForEach(documents, doc =>
+        {
+            var tokenList = doc.tokens.ToList();
+            int docId = doc.docId;
+            int docLength = tokenList.Count;
+            
+            // track document length
+            docLengthsMap[docId] = docLength;
+            
+            // process each token
+            foreach (var token in tokenList.Where(t => !string.IsNullOrEmpty(t.Term)))
+            {
+                var term = token.Term;
+                var docPostings = termPostingsMap.GetOrAdd(term, _ => new ConcurrentDictionary<int, List<int>>());
+                var positions = docPostings.GetOrAdd(docId, _ => new List<int>());
+                
+                lock (positions)
+                {
+                    positions.Add(token.Position);
+                }
+            }
+        });
+
+        // next update global data structures with appropriate locking
+        lock (_statsLock)
+        {
+            // update document length stats
+            foreach (var entry in docLengthsMap)
+            {
+                int docId = entry.Key;
+                int docLength = entry.Value;
+                
+                if (_docLengths.ContainsKey(docId))
+                {
+                    // if we are updating a document, first remove its old length from the average
+                    _avgDocLength = (_avgDocLength * _totalDocs - _docLengths[docId]) / (_totalDocs - 1);
+                    _docLengths[docId] = docLength;
+                }
+                else
+                {
+                    _docLengths[docId] = docLength;
+                    _totalDocs++;
+                }
+                
+                if (docId >= _nextDocId)
+                {
+                    _nextDocId = docId + 1;
+                }
+            }
+            
+            // recalculate average document length
+            _avgDocLength = _docLengths.Values.Sum() / (double)_totalDocs;
+        }
+
+        // third update inverted index with term postings
+        lock (_mapLock)
+        {
+            foreach (var termEntry in termPostingsMap)
+            {
+                string term = termEntry.Key;
+                var docPostings = termEntry.Value;
+                
+                if (!_map.TryGetValue(term, out var list))
+                    _map[term] = list = new();
+                
+                foreach (var docEntry in docPostings)
+                {
+                    int docId = docEntry.Key;
+                    var positions = docEntry.Value.OrderBy(p => p).ToList();
+                    
+                    if (list.Count > 0 && list[^1].DocId == docId)
+                    {
+                        // update existing posting
+                        int lastPos = list[^1].Positions[^1];
+                        foreach (var pos in positions)
+                        {
+                            list[^1].Positions.Add(_delta ? pos - lastPos : pos);
+                            lastPos = pos;
+                        }
+                        list[^1].Count += positions.Count;
+                    }
+                    else
+                    {
+                        // create a new posting
+                        if (positions.Count > 0)
+                        {
+                            var posting = new Posting(docId, positions[0]);
+                            
+                            // add remaining positions
+                            for (int i = 1; i < positions.Count; i++)
+                            {
+                                int lastPos = posting.Positions[^1];
+                                posting.Positions.Add(_delta ? positions[i] - lastPos : positions[i]);
+                                posting.Count++;
+                            }
+                            
+                            list.Add(posting);
+                        }
+                    }
+                }
+            }
+        }
+
+        // finally rebuild bit indices
+        lock (_bitsLock)
+        {
+            _bitBuilt = false;
+            BuildBits();
+        }
     }
 
     public void RemoveDocument(int docId, IEnumerable<Token> tokens)
@@ -147,6 +320,8 @@ public sealed class InvertedIndex : IFullTextIndex
     // BM25 scoring function
     private double CalculateBM25Score(string term, int docId, int termFrequency)
     {
+        if (!_useBM25) return 0; // Skip BM25 calculation if disabled
+
         if (!_map.TryGetValue(term, out var postings) || postings.Count == 0 || !_docLengths.TryGetValue(docId, out var docLength))
             return 0;
             
@@ -332,12 +507,18 @@ public sealed class InvertedIndex : IFullTextIndex
     {
         if (_bitBuilt) return;
         _bitIndex.Clear();
-
-        foreach (var (term, postings) in _map)
+        
+        foreach (var kv in _map)
         {
+            var word = kv.Key;
+            var list = kv.Value;
             var bits = new BitArray(_nextDocId);
-            foreach (var p in postings) bits[p.DocId] = true;
-            _bitIndex[term] = bits;
+            foreach (var p in list)
+            {
+                if (p.DocId < _nextDocId)
+                    bits[p.DocId] = true;
+            }
+            _bitIndex[word] = bits;
         }
         _bitBuilt = true;
     }
@@ -355,22 +536,29 @@ public sealed class InvertedIndex : IFullTextIndex
         return -1;
     }
 
-    private static List<int> MergePositions(List<int> prev, List<int> cur)
+private static List<int> MergePositions(List<int> prev, List<int> cur)
+{
+    var outp = new List<int>();
+    if (prev.Count > 0 && prev[0] == 0) prev = Decode(prev);
+    if (cur.Count > 0 && cur[0] == 0) cur = Decode(cur);
+    
+    int i = 0, j = 0;
+    while (i < prev.Count && j < cur.Count)
     {
-        var outp = new List<int>();
-        // delta decoder
-        if (prev.Count > 0 && prev[0] == 0) prev = Decode(prev);
-        if (cur.Count  > 0 && cur [0] == 0) cur  = Decode(cur);
-
-        // use binary search for each prev position
-        foreach (var p in prev)
+        int target = prev[i] + 1;
+        while (j < cur.Count && cur[j] < target)
         {
-            int idx = BinarySearch(cur, p + 1);
-            if (idx != -1)
-                outp.Add(cur[idx]);
+            j++;
         }
-        return outp;
+        if (j < cur.Count && cur[j] == target)
+        {
+            outp.Add(cur[j]);
+        }
+            i++;
     }
+    
+    return outp;
+}
 
     private static List<int> Decode(List<int> deltas)
     {

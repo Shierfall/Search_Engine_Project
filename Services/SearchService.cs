@@ -14,9 +14,9 @@ public class SearchService : ISearchService
     private readonly IDictionary<string, ISearchOperation> _ops;
     private readonly IDocumentService _docs;
     private readonly Analyzer _analyzer;
-    private readonly IFullTextIndex _invertedIndex;
+    private readonly IFullTextIndex _index;
 
-    public SearchService(IEnumerable<ISearchOperation> ops, IDocumentService docs, Analyzer analyzer, IFullTextIndex invertedIndex)
+    public SearchService(IEnumerable<ISearchOperation> ops, IDocumentService docs, Analyzer analyzer, IFullTextIndex index)
     {
         _ops = ops.ToDictionary(
                 op => op.Name,
@@ -24,7 +24,7 @@ public class SearchService : ISearchService
                 StringComparer.OrdinalIgnoreCase);
         _docs = docs;
         _analyzer = analyzer;
-        _invertedIndex = invertedIndex;
+        _index = index;
     }
 
     public async Task<object> SearchAsync(string operation, string query)
@@ -173,19 +173,47 @@ public class SearchService : ISearchService
     
     public Task SetBM25ParamsAsync(double k1, double b)
     {
-        if (_invertedIndex is InvertedIndex bm25Index)
+        if (_index is SearchEngine.Core.CompactTrieIndex)
         {
-            bm25Index.SetBM25Params(k1, b);
+            var trieIndex = (SearchEngine.Core.CompactTrieIndex)_index;
+            trieIndex.SetBM25Params(k1, b);
         }
         return Task.CompletedTask;
     }
     
     public Task<(double k1, double b)> GetBM25ParamsAsync()
     {
-        if (_invertedIndex is InvertedIndex bm25Index)
+        if (_index is SearchEngine.Core.CompactTrieIndex)
         {
-            return Task.FromResult(bm25Index.GetBM25Params());
+            var trieIndex = (SearchEngine.Core.CompactTrieIndex)_index;
+            return Task.FromResult(trieIndex.GetBM25Params());
         }
-        return Task.FromResult((1.2, 0.75)); // default values if not an InvertedIndex
+        return Task.FromResult((1.2, 0.75)); // default values
+    }
+
+    public Task SetBM25EnabledAsync(bool enabled)
+    {
+        if (_index is SearchEngine.Core.CompactTrieIndex trieIndex)
+        {
+            trieIndex.SetBM25Enabled(enabled);
+        }
+        else if (_index is SearchEngine.Core.InvertedIndex invertedIndex)
+        {
+            invertedIndex.SetBM25Enabled(enabled);
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> IsBM25EnabledAsync()
+    {
+        if (_index is SearchEngine.Core.CompactTrieIndex trieIndex)
+        {
+            return Task.FromResult(trieIndex.IsBM25Enabled());
+        }
+        else if (_index is SearchEngine.Core.InvertedIndex invertedIndex)
+        {
+            return Task.FromResult(invertedIndex.IsBM25Enabled());
+        }
+        return Task.FromResult(false); 
     }
 }

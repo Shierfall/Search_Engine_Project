@@ -62,16 +62,27 @@ namespace SearchEngine.Services
                         {
                             var documentService = scope.ServiceProvider.GetRequiredService<IDocumentService>();
                             await documentService.CreateWithContentAsync(title, content);
+                            Console.WriteLine($"Successfully stored document '{title}' in the database");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error storing document content: {ex.Message}");
+                        Console.WriteLine($"ERROR storing document content: {ex.Message}");
+                        Console.WriteLine($"Stack trace: {ex.StackTrace}");
                     }
                 });
             }
             else
             {
+                if (!_useDatabase)
+                {
+                    Console.WriteLine($"WARNING: Database mode is disabled. Document '{title}' will only be stored in memory.");
+                }
+                else if (_serviceProvider == null)
+                {
+                    Console.WriteLine($"ERROR: Service provider is null. Document '{title}' will only be stored in memory.");
+                }
+                
                 _documentContents[title] = content;
             }
         }
@@ -95,13 +106,26 @@ namespace SearchEngine.Services
                         {
                             // cache in memory for future use
                             _documentContents[title] = content;
+                            Console.WriteLine($"Retrieved document '{title}' from database");
                             return content;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Document '{title}' not found in database");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error retrieving document content: {ex.Message}");
+                    Console.WriteLine($"ERROR retrieving document content: {ex.Message}");
+                    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                }
+            }
+            else
+            {
+                if (!_useDatabase)
+                {
+                    Console.WriteLine($"WARNING: Database mode is disabled. Cannot retrieve document '{title}' from database.");
                 }
             }
                 

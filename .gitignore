@@ -8,3 +8,4 @@ quicktest.db
 *.db-shm
 *.db-wal
 Benchmarks/BenchmarkDotNet.Artifacts/
+Benchmarks/search_benchmark_results.csv
