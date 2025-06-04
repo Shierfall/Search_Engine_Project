@@ -350,12 +350,26 @@ public class IndexConstructionBenchmark
         }
 
         // Calculate bit index memory (_bitIndex: Dictionary<string, BitArray>)
+        // IMPORTANT: Only words that are complete terms (IsEndOfWord = true) get BitArrays,
+        // not every word in the word pool (which includes prefixes for path compression)
         long bitIndexMemory = DICT_OVERHEAD;
         if (maxDocId > 0)
         {
             int bitArraySize = OBJECT_OVERHEAD + ((maxDocId + 7) / 8);
-            // Each word in the index could have a BitArray
-            bitIndexMemory += actualWordToPoolIndexSize * (IntPtr.Size + bitArraySize);
+            
+            // Count actual complete terms that would get BitArrays in BuildBits()
+            int actualCompleteTerms = 0;
+            foreach (var word in trie.WordToPoolIndex.Keys)
+            {
+                // This mimics the logic in BuildBits(): FindNode() + IsEndOfWord check
+                if (trie.IsCompleteTermForBenchmark(word))
+                {
+                    actualCompleteTerms++;
+                }
+            }
+            
+            bitIndexMemory += actualCompleteTerms * (IntPtr.Size + bitArraySize);
+            Console.WriteLine($"  Bit Index Stats - Total words in pool: {actualWordToPoolIndexSize}, Complete terms: {actualCompleteTerms}");
         }
 
         // Calculate doc lengths memory (_docLengths: Dictionary<int, int>)
