@@ -1116,4 +1116,19 @@ public class CompactTrieIndex : IExactPrefixIndex, IFullTextIndex
             _trielock.ExitReadLock();
         }
     }
+    
+    // Public method for benchmarking to check if a word is a complete term
+    public bool IsCompleteTermForBenchmark(string word)
+    {
+        _trielock.EnterReadLock();
+        try
+        {
+            var node = FindNode(root, word.ToLowerInvariant());
+            return node != null && node.IsEndOfWord;
+        }
+        finally
+        {
+            _trielock.ExitReadLock();
+        }
+    }
 }
