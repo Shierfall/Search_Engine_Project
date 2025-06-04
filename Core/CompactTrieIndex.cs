@@ -1073,4 +1073,47 @@ public class CompactTrieIndex : IExactPrefixIndex, IFullTextIndex
     }
 
     public int DocumentCount => _totalDocs;
+
+    // Public methods for benchmarking to access actual built data structure statistics
+    public (int nodeCount, int totalDocIds, int totalPositions, int maxDocId, bool bitBuilt) GetMemoryStats()
+    {
+        _trielock.EnterReadLock();
+        try
+        {
+            var allNodes = GetAllNodes().ToList();
+            int nodeCount = allNodes.Count;
+            int totalDocIds = 0;
+            int totalPositions = 0;
+            int maxDocId = 0;
+            
+            foreach (var node in allNodes)
+            {
+                if (node.DocIds != null)
+                {
+                    totalDocIds += node.DocIds.Count;
+                    if (node.DocIds.Count > 0)
+                    {
+                        maxDocId = Math.Max(maxDocId, node.DocIds.Max());
+                    }
+                }
+                
+                if (node.Positions != null)
+                {
+                    foreach (var positions in node.Positions.Values)
+                    {
+                        if (positions != null)
+                        {
+                            totalPositions += positions.Count;
+                        }
+                    }
+                }
+            }
+            
+            return (nodeCount, totalDocIds, totalPositions, maxDocId, _bitBuilt);
+        }
+        finally
+        {
+            _trielock.ExitReadLock();
+        }
+    }
 }

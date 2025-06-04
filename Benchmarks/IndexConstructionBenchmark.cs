@@ -263,12 +263,6 @@ public class IndexConstructionBenchmark
         const int LIST_OVERHEAD = 32;
         const int DICT_OVERHEAD = 48;
 
-        int trieNodeSize = OBJECT_OVERHEAD + 
-                          (sizeof(int) * 3) + 
-                          sizeof(bool) + 
-                          OBJECT_OVERHEAD + (IntPtr.Size * 26) +  
-                          DICT_OVERHEAD;
-
         // Get actual built data from the trie
         var allNodes = trie.GetAllNodes().ToList();
         int actualNodeCount = allNodes.Count;
@@ -278,68 +272,107 @@ public class IndexConstructionBenchmark
         
         Console.WriteLine($"  Actual Trie Stats - Nodes: {actualNodeCount}, WordPool: {actualWordPoolSize}, WordToPoolIndex: {actualWordToPoolIndexSize}, Docs: {actualDocumentCount}");
 
-        long docIdsMemory = 0;
+        // Calculate memory for actual TrieNode objects
+        long trieNodesMemory = 0;
         int maxDocId = 0;
+        int totalDocIdsCount = 0;
+        int totalPositionsCount = 0;
         
-        // Calculate memory for actual document IDs and positions
         foreach (var node in allNodes)
         {
-            if (node.IsEndOfWord && node.DocIds != null && node.DocIds.Count > 0)
+            // TrieNode object overhead + fields:
+            // - PoolIndex, Offset, Length (3 ints)
+            // - IsEndOfWord (bool)
+            // - ArrayChildren reference (IntPtr)
+            // - DictChildren reference (IntPtr) 
+            // - DocIds reference (IntPtr)
+            // - Positions reference (IntPtr)
+            long nodeMemory = OBJECT_OVERHEAD + 
+                             (sizeof(int) * 3) +     // PoolIndex, Offset, Length
+                             sizeof(bool) +          // IsEndOfWord
+                             (IntPtr.Size * 4);      // References to ArrayChildren, DictChildren, DocIds, Positions
+
+            // ArrayChildren array (always 26 elements)
+            nodeMemory += OBJECT_OVERHEAD + (IntPtr.Size * 26);
+
+            // DictChildren dictionary
+            nodeMemory += DICT_OVERHEAD;
+            if (node.DictChildren != null && node.DictChildren.Count > 0)
             {
-                docIdsMemory += LIST_OVERHEAD + (node.DocIds.Count * sizeof(int));
-                
-                // Find actual max docId
-                int localMaxDocId = node.DocIds.Max();
-                maxDocId = Math.Max(maxDocId, localMaxDocId);
+                nodeMemory += node.DictChildren.Count * (sizeof(char) + IntPtr.Size);
             }
-            
-            // Add position data if required
-            if (includePositions && node.Positions != null)
+
+            // DocIds list
+            if (node.DocIds != null)
             {
-                foreach (var positions in node.Positions.Values)
+                nodeMemory += LIST_OVERHEAD + (node.DocIds.Count * sizeof(int));
+                totalDocIdsCount += node.DocIds.Count;
+                
+                if (node.DocIds.Count > 0)
                 {
-                    if (positions != null)
-                    {
-                        docIdsMemory += LIST_OVERHEAD + (positions.Count * sizeof(int));
-                    }
+                    int localMaxDocId = node.DocIds.Max();
+                    maxDocId = Math.Max(maxDocId, localMaxDocId);
                 }
             }
+
+            // Positions dictionary
+            if (node.Positions != null)
+            {
+                nodeMemory += DICT_OVERHEAD;
+                foreach (var positionsList in node.Positions.Values)
+                {
+                    if (positionsList != null)
+                    {
+                        nodeMemory += LIST_OVERHEAD + (positionsList.Count * sizeof(int));
+                        totalPositionsCount += positionsList.Count;
+                    }
+                }
+                // Dictionary entries overhead (docId -> List<int>)
+                nodeMemory += node.Positions.Count * (sizeof(int) + IntPtr.Size);
+            }
+
+            trieNodesMemory += nodeMemory;
         }
 
-        long totalTrieNodeMemory = actualNodeCount * trieNodeSize + docIdsMemory;
-
-        // Calculate actual word pool memory
+        // Calculate actual word pool memory (List<string>)
         long wordPoolMemory = LIST_OVERHEAD;
         foreach (var word in trie.WordPool)
         {
             wordPoolMemory += OBJECT_OVERHEAD + (word.Length * sizeof(char));
         }
 
-        // Calculate actual word to pool index memory
+        // Calculate actual word to pool index memory (Dictionary<string, int>)
         long wordToPoolIndexMemory = DICT_OVERHEAD;
         foreach (var kvp in trie.WordToPoolIndex)
         {
-            wordToPoolIndexMemory += OBJECT_OVERHEAD + (kvp.Key.Length * sizeof(char)) + sizeof(int);
+            // String key is shared from word pool, so we only count the reference + int value
+            wordToPoolIndexMemory += IntPtr.Size + sizeof(int);
         }
 
-        // Calculate bit index memory based on actual max doc ID
+        // Calculate bit index memory (_bitIndex: Dictionary<string, BitArray>)
         long bitIndexMemory = DICT_OVERHEAD;
-        int bitArraySize = maxDocId > 0 ? OBJECT_OVERHEAD + ((maxDocId + 7) / 8) : 0;
-        
-        // Add memory for each key's bit array
-        foreach (var _ in trie.WordToPoolIndex.Keys)
+        if (maxDocId > 0)
         {
-            bitIndexMemory += IntPtr.Size; // reference to existing string
-            if (bitArraySize > 0)
-            {
-                bitIndexMemory += bitArraySize;
-            }
+            int bitArraySize = OBJECT_OVERHEAD + ((maxDocId + 7) / 8);
+            // Each word in the index could have a BitArray
+            bitIndexMemory += actualWordToPoolIndexSize * (IntPtr.Size + bitArraySize);
         }
 
-        // Calculate doc lengths memory using actual document count
-        long docLengthsMemory = actualDocumentCount * sizeof(int);
+        // Calculate doc lengths memory (_docLengths: Dictionary<int, int>)
+        long docLengthsMemory = DICT_OVERHEAD + (actualDocumentCount * (sizeof(int) + sizeof(int)));
 
-        return totalTrieNodeMemory + wordPoolMemory + wordToPoolIndexMemory + bitIndexMemory + docLengthsMemory;
+        // Other CompactTrieIndex fields
+        long otherFieldsMemory = sizeof(double) * 3 +  // _avgDocLength, _k1, _b
+                                sizeof(int) * 2 +      // _totalDocs, _nextDocId 
+                                sizeof(bool) * 3 +     // _delta, _useBM25, _bitBuilt
+                                OBJECT_OVERHEAD * 3;   // lock objects
+
+        long totalMemory = trieNodesMemory + wordPoolMemory + wordToPoolIndexMemory + bitIndexMemory + docLengthsMemory + otherFieldsMemory;
+
+        Console.WriteLine($"  Trie Memory Breakdown - Nodes: {FormatBytes(trieNodesMemory)}, WordPool: {FormatBytes(wordPoolMemory)}, WordIndex: {FormatBytes(wordToPoolIndexMemory)}, BitIndex: {FormatBytes(bitIndexMemory)}, DocLengths: {FormatBytes(docLengthsMemory)}");
+        Console.WriteLine($"  Total DocIds: {totalDocIdsCount}, Total Positions: {totalPositionsCount}, MaxDocId: {maxDocId}");
+
+        return totalMemory;
     }
 
     private long CalculateActualInvertedIndexMemory(InvertedIndex invertedIndex, bool includePositions)
