@@ -15,7 +15,7 @@ namespace SearchEngine.Benchmarks;
 public class IndexConstructionBenchmark
 {
     private string[] _fileSizes = new[] { "100KB", "1MB", "2MB", "5MB", "10MB", "20MB", "50MB", "100MB", "200MB", "400MB"};
-    private string _basePath = "/home/shierfall/Downloads/texts/"; // adjust this path to your local environment
+    private string _basePath = "/zhome/6b/1/188023/Downloads/texts/"; // adjust this path to your local environment
     private Analyzer _analyzer;
     private IExactPrefixIndex _trie;
     private IFullTextIndex _invertedIndex;
@@ -206,43 +206,42 @@ public class IndexConstructionBenchmark
         Console.WriteLine($"\nMemory Usage for {FileSize} file:");
         Console.WriteLine("----------------------------------------");
 
-        // load content from the actual file to ensure we're measuring based on file size
-        string content;
-        try
-        {
-            using var reader = new StreamReader(_currentFile, Encoding.UTF8);
-            content = reader.ReadToEnd();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading content for memory analysis: {ex.Message}");
-            content = _currentContent; // fallback to cached content
-        }
-
-        // measure memory for CompactTrieIndex
-        var trieTokens = _analyzer.Analyze(content).ToList();
-        int totalTokens = trieTokens.Count;
-        // count unique tokens
-        var uniqueTokens = new HashSet<string>(trieTokens.Select(t => t.Term)).Count;
-        
+        // Create indexes to measure memory
         var compactTrie = new CompactTrieIndex();
         compactTrie.SetUseBM25(false); // disable BM25 for fair comparison
-        compactTrie.AddDocument(1, trieTokens);
+        var invertedIndex = new InvertedIndex();
+        var bloomFilter = new BloomFilter(1000000, 0.01);
+
+        // Process documents the same way as benchmarks to get realistic memory usage
+        int totalTokens = 0;
+        int documentCount = 0;
+        var allUniqueTokens = new HashSet<string>();
+
+        ProcessMultipleDocuments(doc => {
+            var tokens = _analyzer.Analyze(doc.content).ToList();
+            
+            // Add to indexes with proper document IDs (not just 1!)
+            compactTrie.AddDocument(doc.id, tokens);
+            invertedIndex.AddDocument(doc.id, tokens);
+            
+            // Add to bloom filter
+            foreach (var token in tokens)
+            {
+                bloomFilter.Add(token.Term);
+                allUniqueTokens.Add(token.Term);
+            }
+            
+            totalTokens += tokens.Count;
+            documentCount++;
+        });
+
+        // Calculate memory usage
         long trieMemory = CalculateTrieMemory(compactTrie, false);
         Console.WriteLine($"Trie Index (no BM25): {FormatBytes(trieMemory)}");
 
-        // measure memory for optimized InvertedIndex
-        var invertedIndex = new InvertedIndex();
-        invertedIndex.AddDocument(1, trieTokens);
-        long invertedIndexMemory = CalculateUnifiedInvertedIndexMemory(invertedIndex, false);
+        long invertedIndexMemory = CalculateUnifiedInvertedIndexMemory(invertedIndex, false, documentCount, totalTokens, allUniqueTokens.Count);
         Console.WriteLine($"Unified Inverted Index: {FormatBytes(invertedIndexMemory)}");
 
-        // measure memory for BloomFilter
-        var bloomFilter = new BloomFilter(1000000, 0.01);
-        foreach (var token in trieTokens)
-        {
-            bloomFilter.Add(token.Term);
-        }
         long bloomFilterMemory = CalculateBloomFilterMemory(bloomFilter);
         Console.WriteLine($"Bloom Filter: {FormatBytes(bloomFilterMemory)}");
 
@@ -250,9 +249,10 @@ public class IndexConstructionBenchmark
         long totalMemory = trieMemory + invertedIndexMemory + bloomFilterMemory;
         Console.WriteLine($"Total Memory: {FormatBytes(totalMemory)}");
         Console.WriteLine($"Total Tokens: {totalTokens}");
-        Console.WriteLine($"Unique Tokens: {uniqueTokens}");
+        Console.WriteLine($"Unique Tokens: {allUniqueTokens.Count}");
+        Console.WriteLine($"Documents Processed: {documentCount}");
 
-        ExportMemoryUsageToCsv(FileSize, totalTokens, uniqueTokens, trieMemory, invertedIndexMemory, bloomFilterMemory);
+        ExportMemoryUsageToCsv(FileSize, totalTokens, allUniqueTokens.Count, trieMemory, invertedIndexMemory, bloomFilterMemory);
 
         Console.WriteLine("----------------------------------------\n");
     }
@@ -336,7 +336,7 @@ public class IndexConstructionBenchmark
         return totalTrieNodeMemory + wordPoolMemory + wordToPoolIndexMemory + bitIndexMemory + docLengthsMemory;
     }
 
-    private long CalculateUnifiedInvertedIndexMemory(InvertedIndex invertedIndex, bool includePositions)
+    private long CalculateUnifiedInvertedIndexMemory(InvertedIndex invertedIndex, bool includePositions, int documentCount, int totalTokens, int uniqueTokens)
     {
         const int OBJECT_OVERHEAD = 16;
         const int LIST_OVERHEAD = 32;
@@ -347,12 +347,10 @@ public class IndexConstructionBenchmark
         // Main _termIndex dictionary overhead
         long totalMemory = DICT_OVERHEAD;
         
-        // Estimate memory based on typical document structure
-        // Since we can't access private fields directly, we estimate based on document size
-        int estimatedUniqueTerms = Math.Max(1, content.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(w => w.ToLowerInvariant()).Distinct().Count());
-        int estimatedTotalTokens = content.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
-        int estimatedPostings = Math.Min(estimatedTotalTokens, estimatedUniqueTerms * 2); // conservative estimate
+        // Use actual measured values instead of estimates
+        int estimatedUniqueTerms = Math.Max(1, uniqueTokens);
+        int estimatedTotalTokens = Math.Max(1, totalTokens);
+        int estimatedPostings = Math.Min(estimatedTotalTokens, estimatedUniqueTerms * documentCount); // more realistic estimate
         
         // Calculate memory for unified TermEntry structures
         for (int i = 0; i < estimatedUniqueTerms; i++)
@@ -381,12 +379,15 @@ public class IndexConstructionBenchmark
             totalMemory += HASHSET_OVERHEAD + (sizeof(int) * avgPostingsPerTerm);
             
             // BitIndex (BitArray?) - allocated when BuildBits() is called
-            // Assume 1 document for this calculation
-            totalMemory += BITARRAY_OVERHEAD + ((1 + 7) / 8); // minimal bit array for 1 doc
+            // Use actual document count for more accurate calculation
+            if (documentCount > 0)
+            {
+                totalMemory += BITARRAY_OVERHEAD + ((documentCount + 7) / 8);
+            }
         }
         
         // Document lengths tracking (_docLengths dictionary)
-        totalMemory += DICT_OVERHEAD + sizeof(int) * 2; // one document entry
+        totalMemory += DICT_OVERHEAD + (sizeof(int) * documentCount);
         
         // BM25 statistics fields
         totalMemory += sizeof(double) * 3 + sizeof(int) * 2; // _avgDocLength, _k1, _b, _totalDocs, _nextDocId
