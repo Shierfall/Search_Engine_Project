@@ -236,10 +236,10 @@ public class IndexConstructionBenchmark
         });
 
         // Calculate memory usage
-        long trieMemory = CalculateTrieMemory(compactTrie, false);
+        long trieMemory = CalculateActualTrieMemory(compactTrie, false);
         Console.WriteLine($"Trie Index (no BM25): {FormatBytes(trieMemory)}");
 
-        long invertedIndexMemory = CalculateUnifiedInvertedIndexMemory(invertedIndex, false, documentCount, totalTokens, allUniqueTokens.Count);
+        long invertedIndexMemory = CalculateActualInvertedIndexMemory(invertedIndex, false);
         Console.WriteLine($"Unified Inverted Index: {FormatBytes(invertedIndexMemory)}");
 
         long bloomFilterMemory = CalculateBloomFilterMemory(bloomFilter);
@@ -257,7 +257,7 @@ public class IndexConstructionBenchmark
         Console.WriteLine("----------------------------------------\n");
     }
 
-    private long CalculateTrieMemory(CompactTrieIndex trie, bool includePositions)
+    private long CalculateActualTrieMemory(CompactTrieIndex trie, bool includePositions)
     {
         const int OBJECT_OVERHEAD = 16;
         const int LIST_OVERHEAD = 32;
@@ -269,25 +269,31 @@ public class IndexConstructionBenchmark
                           OBJECT_OVERHEAD + (IntPtr.Size * 26) +  
                           DICT_OVERHEAD;
 
-        // calculate all memory components in a single pass through the nodes
+        // Get actual built data from the trie
         var allNodes = trie.GetAllNodes().ToList();
-        int nodeCount = allNodes.Count;
+        int actualNodeCount = allNodes.Count;
+        int actualDocumentCount = trie.DocumentCount;
+        int actualWordPoolSize = trie.WordPool.Count;
+        int actualWordToPoolIndexSize = trie.WordToPoolIndex.Count;
+        
+        Console.WriteLine($"  Actual Trie Stats - Nodes: {actualNodeCount}, WordPool: {actualWordPoolSize}, WordToPoolIndex: {actualWordToPoolIndexSize}, Docs: {actualDocumentCount}");
+
         long docIdsMemory = 0;
         int maxDocId = 0;
         
+        // Calculate memory for actual document IDs and positions
         foreach (var node in allNodes)
         {
-            // calculate memory for document IDs
             if (node.IsEndOfWord && node.DocIds != null && node.DocIds.Count > 0)
             {
                 docIdsMemory += LIST_OVERHEAD + (node.DocIds.Count * sizeof(int));
                 
-                // Find max docId for bit array size calculation
+                // Find actual max docId
                 int localMaxDocId = node.DocIds.Max();
                 maxDocId = Math.Max(maxDocId, localMaxDocId);
             }
             
-            // add position data if required
+            // Add position data if required
             if (includePositions && node.Positions != null)
             {
                 foreach (var positions in node.Positions.Values)
@@ -300,27 +306,27 @@ public class IndexConstructionBenchmark
             }
         }
 
-        long totalTrieNodeMemory = nodeCount * trieNodeSize + docIdsMemory;
+        long totalTrieNodeMemory = actualNodeCount * trieNodeSize + docIdsMemory;
 
-        // calculate word pool memory
+        // Calculate actual word pool memory
         long wordPoolMemory = LIST_OVERHEAD;
         foreach (var word in trie.WordPool)
         {
             wordPoolMemory += OBJECT_OVERHEAD + (word.Length * sizeof(char));
         }
 
-        // calculate word to pool index memory
+        // Calculate actual word to pool index memory
         long wordToPoolIndexMemory = DICT_OVERHEAD;
         foreach (var kvp in trie.WordToPoolIndex)
         {
             wordToPoolIndexMemory += OBJECT_OVERHEAD + (kvp.Key.Length * sizeof(char)) + sizeof(int);
         }
 
-        // calculate bit index memory
+        // Calculate bit index memory based on actual max doc ID
         long bitIndexMemory = DICT_OVERHEAD;
         int bitArraySize = maxDocId > 0 ? OBJECT_OVERHEAD + ((maxDocId + 7) / 8) : 0;
         
-        // add memory for each key's bit array
+        // Add memory for each key's bit array
         foreach (var _ in trie.WordToPoolIndex.Keys)
         {
             bitIndexMemory += IntPtr.Size; // reference to existing string
@@ -330,13 +336,13 @@ public class IndexConstructionBenchmark
             }
         }
 
-        // calculate doc lengths memory
-        long docLengthsMemory = trie.DocumentCount * sizeof(int);
+        // Calculate doc lengths memory using actual document count
+        long docLengthsMemory = actualDocumentCount * sizeof(int);
 
         return totalTrieNodeMemory + wordPoolMemory + wordToPoolIndexMemory + bitIndexMemory + docLengthsMemory;
     }
 
-    private long CalculateUnifiedInvertedIndexMemory(InvertedIndex invertedIndex, bool includePositions, int documentCount, int totalTokens, int uniqueTokens)
+    private long CalculateActualInvertedIndexMemory(InvertedIndex invertedIndex, bool includePositions)
     {
         const int OBJECT_OVERHEAD = 16;
         const int LIST_OVERHEAD = 32;
@@ -344,55 +350,61 @@ public class IndexConstructionBenchmark
         const int HASHSET_OVERHEAD = 48;
         const int BITARRAY_OVERHEAD = 24;
 
+        // Get actual statistics from the built index
+        var stats = invertedIndex.GetMemoryStats();
+        int actualTermCount = stats.termCount;
+        int actualTotalPostings = stats.totalPostings;
+        int actualTotalPositions = stats.totalPositions;
+        int actualMaxDocId = stats.maxDocId;
+        bool actualBitsBuilt = stats.bitsBuilt;
+        int actualDocumentCount = invertedIndex.GetDocumentCount();
+
+        Console.WriteLine($"  Actual InvertedIndex Stats - Terms: {actualTermCount}, Postings: {actualTotalPostings}, Positions: {actualTotalPositions}, MaxDocId: {actualMaxDocId}, Docs: {actualDocumentCount}");
+
         // Main _termIndex dictionary overhead
         long totalMemory = DICT_OVERHEAD;
         
-        // Use actual measured values instead of estimates
-        int estimatedUniqueTerms = Math.Max(1, uniqueTokens);
-        int estimatedTotalTokens = Math.Max(1, totalTokens);
-        int estimatedPostings = Math.Min(estimatedTotalTokens, estimatedUniqueTerms * documentCount); // more realistic estimate
-        
-        // Calculate memory for unified TermEntry structures
-        for (int i = 0; i < estimatedUniqueTerms; i++)
+        // Calculate memory for actual TermEntry structures
+        foreach (int termIndex in Enumerable.Range(0, actualTermCount))
         {
             // TermEntry object overhead
             totalMemory += OBJECT_OVERHEAD;
             
-            // Postings dictionary (Dictionary<int, Posting>)
+            // Postings dictionary (Dictionary<int, Posting>) - estimate average postings per term
             totalMemory += DICT_OVERHEAD;
-            int avgPostingsPerTerm = Math.Max(1, estimatedPostings / estimatedUniqueTerms);
+            int avgPostingsPerTerm = Math.Max(1, actualTotalPostings / actualTermCount);
             
+            // Memory for actual Posting objects
             for (int j = 0; j < avgPostingsPerTerm; j++)
             {
                 // Posting object: DocId (int) + Count (int) + Positions (List<int>)
                 totalMemory += OBJECT_OVERHEAD + sizeof(int) * 2; // DocId + Count
                 
-                if (includePositions)
+                if (includePositions && actualTotalPositions > 0)
                 {
-                    // Positions list (estimated 3-5 positions per posting)
-                    int avgPositionsPerPosting = 4;
+                    // Positions list - use actual average positions per posting
+                    int avgPositionsPerPosting = Math.Max(1, actualTotalPositions / actualTotalPostings);
                     totalMemory += LIST_OVERHEAD + (sizeof(int) * avgPositionsPerPosting);
                 }
             }
             
-            // DocSet (HashSet<int>) for O(1) document lookups - key optimization!
+            // DocSet (HashSet<int>) for O(1) document lookups
             totalMemory += HASHSET_OVERHEAD + (sizeof(int) * avgPostingsPerTerm);
             
-            // BitIndex (BitArray?) - allocated when BuildBits() is called
-            // Use actual document count for more accurate calculation
-            if (documentCount > 0)
+            // BitIndex (BitArray?) - only if bits are actually built
+            if (actualBitsBuilt && actualMaxDocId >= 0)
             {
-                totalMemory += BITARRAY_OVERHEAD + ((documentCount + 7) / 8);
+                totalMemory += BITARRAY_OVERHEAD + ((actualMaxDocId + 7) / 8);
             }
         }
         
-        // Document lengths tracking (_docLengths dictionary)
-        totalMemory += DICT_OVERHEAD + (sizeof(int) * documentCount);
+        // Document lengths tracking (_docLengths dictionary) - use actual document count
+        totalMemory += DICT_OVERHEAD + (sizeof(int) * actualDocumentCount);
         
         // BM25 statistics fields
         totalMemory += sizeof(double) * 3 + sizeof(int) * 2; // _avgDocLength, _k1, _b, _totalDocs, _nextDocId
         
-        // Thread synchronization objects
+        // Thread synchronization objects  
         totalMemory += OBJECT_OVERHEAD * 2; // _termLock, _statsLock
         
         return totalMemory;

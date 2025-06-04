@@ -724,4 +724,57 @@ private static List<int> MergePositions(List<int> prev, List<int> cur)
         return finalResults;
     }
 
+    // Public methods for benchmarking to access actual built data structure statistics
+    public int GetTermCount() 
+    {
+        lock (_termLock)
+        {
+            return _termIndex.Count;
+        }
+    }
+    
+    public int GetTotalPostingsCount()
+    {
+        lock (_termLock)
+        {
+            return _termIndex.Values.Sum(entry => entry.Postings.Count);
+        }
+    }
+    
+    public int GetTotalPositionsCount()
+    {
+        lock (_termLock)
+        {
+            return _termIndex.Values
+                .SelectMany(entry => entry.Postings.Values)
+                .Sum(posting => posting.Positions.Count);
+        }
+    }
+    
+    public int GetDocumentCount()
+    {
+        lock (_statsLock)
+        {
+            return _totalDocs;
+        }
+    }
+    
+    public bool IsBitBuilt() => _bitBuilt;
+    
+    public int GetMaxDocId() => _nextDocId - 1;
+
+    // Get actual memory-relevant statistics for benchmarking
+    public (int termCount, int totalPostings, int totalPositions, int maxDocId, bool bitsBuilt) GetMemoryStats()
+    {
+        lock (_termLock)
+        {
+            var termCount = _termIndex.Count;
+            var totalPostings = _termIndex.Values.Sum(entry => entry.Postings.Count);
+            var totalPositions = _termIndex.Values
+                .SelectMany(entry => entry.Postings.Values)
+                .Sum(posting => posting.Positions.Count);
+            
+            return (termCount, totalPostings, totalPositions, _nextDocId - 1, _bitBuilt);
+        }
+    }
 }
