@@ -1,0 +1,624 @@
+// Validating benchmarks:
+// ***** BenchmarkRunner: Start   *****
+// ***** Found 8 benchmark(s) in total *****
+// ***** Building 1 exe(s) in Parallel: Start   *****
+// start dotnet  restore /p:UseSharedCompilation=false /p:BuildInParallel=false /m:1 /p:Deterministic=true /p:Optimize=true /p:IntermediateOutputPath="/zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/obj/Release/net8.0/" /p:OutDir="/zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0/" /p:OutputPath="/zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0/" in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994
+// command took 3.17 sec and exited with 0
+// start dotnet  build -c Release --no-restore /p:UseSharedCompilation=false /p:BuildInParallel=false /m:1 /p:Deterministic=true /p:Optimize=true /p:IntermediateOutputPath="/zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/obj/Release/net8.0/" /p:OutDir="/zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0/" /p:OutputPath="/zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0/" --output "/zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0/" in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994
+// command took 16.11 sec and exited with 0
+// ***** Done, took 00:00:19 (19.44 sec)   *****
+// Found 8 benchmarks:
+//   IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=100KB.txt]
+//   IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=100MB.txt]
+//   IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=10MB.txt]
+//   IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=1MB.txt]
+//   IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=20MB.txt]
+//   IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=2MB.txt]
+//   IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=50MB.txt]
+//   IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=5MB.txt]
+
+// **************************
+// Benchmark: IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=100KB.txt]
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet 529f7dd9-a738-4c42-8c4a-6b4e56bb9994.dll --anonymousPipes 117 118 --benchmarkName "SearchEngineProject.IndexConstructionBenchmark.BenchmarkIndexConstruction(FileName: \"100KB.txt\")" --job "IterationCount=10, WarmupCount=1" --benchmarkId 0 in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0
+// Failed to set up high priority (Permission denied). In order to run benchmarks with high priority, make sure you have the right permissions.
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// BenchmarkDotNet v0.14.0
+// Runtime=.NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+// GC=Concurrent Server
+// HardwareIntrinsics=AVX2,AES,BMI1,BMI2,FMA,LZCNT,PCLMUL,POPCNT VectorSize=256
+// Job: Job-ZSLENV(IterationCount=10, WarmupCount=1)
+
+OverheadJitting  1: 1 op, 436909.00 ns, 436.9090 us/op
+WorkloadJitting  1: 1 op, 223993015.00 ns, 223.9930 ms/op
+
+WorkloadPilot    1: 2 op, 346113011.00 ns, 173.0565 ms/op
+WorkloadPilot    2: 3 op, 548543183.00 ns, 182.8477 ms/op
+
+WorkloadWarmup   1: 3 op, 285466326.00 ns, 95.1554 ms/op
+
+// BeforeActualRun
+WorkloadActual   1: 3 op, 203342387.00 ns, 67.7808 ms/op
+WorkloadActual   2: 3 op, 175924941.00 ns, 58.6416 ms/op
+WorkloadActual   3: 3 op, 179725976.00 ns, 59.9087 ms/op
+WorkloadActual   4: 3 op, 181813577.00 ns, 60.6045 ms/op
+WorkloadActual   5: 3 op, 180097809.00 ns, 60.0326 ms/op
+WorkloadActual   6: 3 op, 174177680.00 ns, 58.0592 ms/op
+WorkloadActual   7: 3 op, 180704742.00 ns, 60.2349 ms/op
+WorkloadActual   8: 3 op, 179753076.00 ns, 59.9177 ms/op
+WorkloadActual   9: 3 op, 180255829.00 ns, 60.0853 ms/op
+WorkloadActual  10: 3 op, 179963073.00 ns, 59.9877 ms/op
+
+// AfterActualRun
+WorkloadResult   1: 3 op, 175924941.00 ns, 58.6416 ms/op
+WorkloadResult   2: 3 op, 179725976.00 ns, 59.9087 ms/op
+WorkloadResult   3: 3 op, 181813577.00 ns, 60.6045 ms/op
+WorkloadResult   4: 3 op, 180097809.00 ns, 60.0326 ms/op
+WorkloadResult   5: 3 op, 174177680.00 ns, 58.0592 ms/op
+WorkloadResult   6: 3 op, 180704742.00 ns, 60.2349 ms/op
+WorkloadResult   7: 3 op, 179753076.00 ns, 59.9177 ms/op
+WorkloadResult   8: 3 op, 180255829.00 ns, 60.0853 ms/op
+WorkloadResult   9: 3 op, 179963073.00 ns, 59.9877 ms/op
+// GC:  0 0 0 159814256 3
+// Threading:  0 0 3
+
+// AfterAll
+// Benchmark Process 2595436 has exited with code 0.
+
+Mean = 59.719 ms, StdErr = 0.272 ms (0.46%), N = 9, StdDev = 0.817 ms
+Min = 58.059 ms, Q1 = 59.909 ms, Median = 59.988 ms, Q3 = 60.085 ms, Max = 60.605 ms
+IQR = 0.177 ms, LowerFence = 59.644 ms, UpperFence = 60.350 ms
+ConfidenceInterval = [58.345 ms; 61.093 ms] (CI 99.9%), Margin = 1.374 ms (2.30% of Mean)
+Skewness = -0.99, Kurtosis = 2.4, MValue = 2
+
+// ** Remained 7 (87.5 %) benchmark(s) to run. Estimated finish 2025-04-26 3:04 (0h 0m from now) **
+// **************************
+// Benchmark: IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=100MB.txt]
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet 529f7dd9-a738-4c42-8c4a-6b4e56bb9994.dll --anonymousPipes 119 120 --benchmarkName "SearchEngineProject.IndexConstructionBenchmark.BenchmarkIndexConstruction(FileName: \"100MB.txt\")" --job "IterationCount=10, WarmupCount=1" --benchmarkId 1 in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0
+// Failed to set up high priority (Permission denied). In order to run benchmarks with high priority, make sure you have the right permissions.
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// BenchmarkDotNet v0.14.0
+// Runtime=.NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+// GC=Concurrent Server
+// HardwareIntrinsics=AVX2,AES,BMI1,BMI2,FMA,LZCNT,PCLMUL,POPCNT VectorSize=256
+// Job: Job-TBIWOU(IterationCount=10, WarmupCount=1)
+
+OverheadJitting  1: 1 op, 437046.00 ns, 437.0460 us/op
+WorkloadJitting  1: 1 op, 493158840520.00 ns, 8.2193 m/op
+
+WorkloadWarmup   1: 1 op, 490528386267.00 ns, 8.1755 m/op
+
+// BeforeActualRun
+WorkloadActual   1: 1 op, 493973064869.00 ns, 8.2329 m/op
+WorkloadActual   2: 1 op, 492547675295.00 ns, 8.2091 m/op
+WorkloadActual   3: 1 op, 496330560788.00 ns, 8.2722 m/op
+WorkloadActual   4: 1 op, 495065600278.00 ns, 8.2511 m/op
+WorkloadActual   5: 1 op, 495100875119.00 ns, 8.2517 m/op
+WorkloadActual   6: 1 op, 493039075467.00 ns, 8.2173 m/op
+WorkloadActual   7: 1 op, 495868739201.00 ns, 8.2645 m/op
+WorkloadActual   8: 1 op, 496555495289.00 ns, 8.2759 m/op
+WorkloadActual   9: 1 op, 493879887619.00 ns, 8.2313 m/op
+WorkloadActual  10: 1 op, 492531645997.00 ns, 8.2089 m/op
+
+// AfterActualRun
+WorkloadResult   1: 1 op, 493973064869.00 ns, 8.2329 m/op
+WorkloadResult   2: 1 op, 492547675295.00 ns, 8.2091 m/op
+WorkloadResult   3: 1 op, 496330560788.00 ns, 8.2722 m/op
+WorkloadResult   4: 1 op, 495065600278.00 ns, 8.2511 m/op
+WorkloadResult   5: 1 op, 495100875119.00 ns, 8.2517 m/op
+WorkloadResult   6: 1 op, 493039075467.00 ns, 8.2173 m/op
+WorkloadResult   7: 1 op, 495868739201.00 ns, 8.2645 m/op
+WorkloadResult   8: 1 op, 496555495289.00 ns, 8.2759 m/op
+WorkloadResult   9: 1 op, 493879887619.00 ns, 8.2313 m/op
+WorkloadResult  10: 1 op, 492531645997.00 ns, 8.2089 m/op
+// GC:  143 43 7 62674342544 1
+// Threading:  0 0 1
+
+// AfterAll
+// Benchmark Process 2595476 has exited with code 0.
+
+Mean = 8.241 m, StdErr = 0.008 m (0.10%), N = 10, StdDev = 0.025 m
+Min = 8.209 m, Q1 = 8.221 m, Median = 8.242 m, Q3 = 8.261 m, Max = 8.276 m
+IQR = 0.040 m, LowerFence = 8.160 m, UpperFence = 8.322 m
+ConfidenceInterval = [8.203 m; 8.280 m] (CI 99.9%), Margin = 0.038 m (0.46% of Mean)
+Skewness = -0, Kurtosis = 1.28, MValue = 2
+
+// ** Remained 6 (75.0 %) benchmark(s) to run. Estimated finish 2025-04-26 10:12 (5h 21m from now) **
+// **************************
+// Benchmark: IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=10MB.txt]
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet 529f7dd9-a738-4c42-8c4a-6b4e56bb9994.dll --anonymousPipes 119 120 --benchmarkName "SearchEngineProject.IndexConstructionBenchmark.BenchmarkIndexConstruction(FileName: \"10MB.txt\")" --job "IterationCount=10, WarmupCount=1" --benchmarkId 2 in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0
+// Failed to set up high priority (Permission denied). In order to run benchmarks with high priority, make sure you have the right permissions.
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// BenchmarkDotNet v0.14.0
+// Runtime=.NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+// GC=Concurrent Server
+// HardwareIntrinsics=AVX2,AES,BMI1,BMI2,FMA,LZCNT,PCLMUL,POPCNT VectorSize=256
+// Job: Job-XGGNSO(IterationCount=10, WarmupCount=1)
+
+OverheadJitting  1: 1 op, 395487.00 ns, 395.4870 us/op
+WorkloadJitting  1: 1 op, 10465855451.00 ns, 10.4659 s/op
+
+WorkloadWarmup   1: 1 op, 9503056488.00 ns, 9.5031 s/op
+
+// BeforeActualRun
+WorkloadActual   1: 1 op, 9503967611.00 ns, 9.5040 s/op
+WorkloadActual   2: 1 op, 9673666510.00 ns, 9.6737 s/op
+WorkloadActual   3: 1 op, 9543108588.00 ns, 9.5431 s/op
+WorkloadActual   4: 1 op, 9616089665.00 ns, 9.6161 s/op
+WorkloadActual   5: 1 op, 9584551609.00 ns, 9.5846 s/op
+WorkloadActual   6: 1 op, 9516912727.00 ns, 9.5169 s/op
+WorkloadActual   7: 1 op, 9586383527.00 ns, 9.5864 s/op
+WorkloadActual   8: 1 op, 9655904189.00 ns, 9.6559 s/op
+WorkloadActual   9: 1 op, 9485460622.00 ns, 9.4855 s/op
+WorkloadActual  10: 1 op, 9493706487.00 ns, 9.4937 s/op
+
+// AfterActualRun
+WorkloadResult   1: 1 op, 9503967611.00 ns, 9.5040 s/op
+WorkloadResult   2: 1 op, 9673666510.00 ns, 9.6737 s/op
+WorkloadResult   3: 1 op, 9543108588.00 ns, 9.5431 s/op
+WorkloadResult   4: 1 op, 9616089665.00 ns, 9.6161 s/op
+WorkloadResult   5: 1 op, 9584551609.00 ns, 9.5846 s/op
+WorkloadResult   6: 1 op, 9516912727.00 ns, 9.5169 s/op
+WorkloadResult   7: 1 op, 9586383527.00 ns, 9.5864 s/op
+WorkloadResult   8: 1 op, 9655904189.00 ns, 9.6559 s/op
+WorkloadResult   9: 1 op, 9485460622.00 ns, 9.4855 s/op
+WorkloadResult  10: 1 op, 9493706487.00 ns, 9.4937 s/op
+// GC:  15 6 2 6262784600 1
+// Threading:  0 0 1
+
+// AfterAll
+// Benchmark Process 2613425 has exited with code 0.
+
+Mean = 9.566 s, StdErr = 0.021 s (0.22%), N = 10, StdDev = 0.068 s
+Min = 9.485 s, Q1 = 9.507 s, Median = 9.564 s, Q3 = 9.609 s, Max = 9.674 s
+IQR = 0.101 s, LowerFence = 9.355 s, UpperFence = 9.761 s
+ConfidenceInterval = [9.463 s; 9.669 s] (CI 99.9%), Margin = 0.103 s (1.07% of Mean)
+Skewness = 0.27, Kurtosis = 1.4, MValue = 2
+
+// ** Remained 5 (62.5 %) benchmark(s) to run. Estimated finish 2025-04-26 7:55 (3h 2m from now) **
+// **************************
+// Benchmark: IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=1MB.txt]
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet 529f7dd9-a738-4c42-8c4a-6b4e56bb9994.dll --anonymousPipes 119 120 --benchmarkName "SearchEngineProject.IndexConstructionBenchmark.BenchmarkIndexConstruction(FileName: \"1MB.txt\")" --job "IterationCount=10, WarmupCount=1" --benchmarkId 3 in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0
+// Failed to set up high priority (Permission denied). In order to run benchmarks with high priority, make sure you have the right permissions.
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// BenchmarkDotNet v0.14.0
+// Runtime=.NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+// GC=Concurrent Server
+// HardwareIntrinsics=AVX2,AES,BMI1,BMI2,FMA,LZCNT,PCLMUL,POPCNT VectorSize=256
+// Job: Job-PARYIE(IterationCount=10, WarmupCount=1)
+
+OverheadJitting  1: 1 op, 441200.00 ns, 441.2000 us/op
+WorkloadJitting  1: 1 op, 1700734042.00 ns, 1.7007 s/op
+
+OverheadJitting  2: 1 op, 574.00 ns, 574.0000 ns/op
+WorkloadJitting  2: 1 op, 817537489.00 ns, 817.5375 ms/op
+
+WorkloadWarmup   1: 1 op, 747435921.00 ns, 747.4359 ms/op
+
+// BeforeActualRun
+WorkloadActual   1: 1 op, 738589685.00 ns, 738.5897 ms/op
+WorkloadActual   2: 1 op, 747731868.00 ns, 747.7319 ms/op
+WorkloadActual   3: 1 op, 744314721.00 ns, 744.3147 ms/op
+WorkloadActual   4: 1 op, 744541310.00 ns, 744.5413 ms/op
+WorkloadActual   5: 1 op, 733594203.00 ns, 733.5942 ms/op
+WorkloadActual   6: 1 op, 730221799.00 ns, 730.2218 ms/op
+WorkloadActual   7: 1 op, 730578923.00 ns, 730.5789 ms/op
+WorkloadActual   8: 1 op, 752849155.00 ns, 752.8492 ms/op
+WorkloadActual   9: 1 op, 742748536.00 ns, 742.7485 ms/op
+WorkloadActual  10: 1 op, 735835892.00 ns, 735.8359 ms/op
+
+// AfterActualRun
+WorkloadResult   1: 1 op, 738589685.00 ns, 738.5897 ms/op
+WorkloadResult   2: 1 op, 747731868.00 ns, 747.7319 ms/op
+WorkloadResult   3: 1 op, 744314721.00 ns, 744.3147 ms/op
+WorkloadResult   4: 1 op, 744541310.00 ns, 744.5413 ms/op
+WorkloadResult   5: 1 op, 733594203.00 ns, 733.5942 ms/op
+WorkloadResult   6: 1 op, 730221799.00 ns, 730.2218 ms/op
+WorkloadResult   7: 1 op, 730578923.00 ns, 730.5789 ms/op
+WorkloadResult   8: 1 op, 752849155.00 ns, 752.8492 ms/op
+WorkloadResult   9: 1 op, 742748536.00 ns, 742.7485 ms/op
+WorkloadResult  10: 1 op, 735835892.00 ns, 735.8359 ms/op
+// GC:  1 0 0 622097448 1
+// Threading:  0 0 1
+
+// AfterAll
+// Benchmark Process 2613808 has exited with code 0.
+
+Mean = 740.101 ms, StdErr = 2.395 ms (0.32%), N = 10, StdDev = 7.574 ms
+Min = 730.222 ms, Q1 = 734.155 ms, Median = 740.669 ms, Q3 = 744.485 ms, Max = 752.849 ms
+IQR = 10.330 ms, LowerFence = 718.660 ms, UpperFence = 759.980 ms
+ConfidenceInterval = [728.650 ms; 751.552 ms] (CI 99.9%), Margin = 11.451 ms (1.55% of Mean)
+Skewness = 0.12, Kurtosis = 1.53, MValue = 2
+
+// ** Remained 4 (50.0 %) benchmark(s) to run. Estimated finish 2025-04-26 6:43 (1h 49m from now) **
+// **************************
+// Benchmark: IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=20MB.txt]
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet 529f7dd9-a738-4c42-8c4a-6b4e56bb9994.dll --anonymousPipes 119 120 --benchmarkName "SearchEngineProject.IndexConstructionBenchmark.BenchmarkIndexConstruction(FileName: \"20MB.txt\")" --job "IterationCount=10, WarmupCount=1" --benchmarkId 4 in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0
+// Failed to set up high priority (Permission denied). In order to run benchmarks with high priority, make sure you have the right permissions.
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// BenchmarkDotNet v0.14.0
+// Runtime=.NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+// GC=Concurrent Server
+// HardwareIntrinsics=AVX2,AES,BMI1,BMI2,FMA,LZCNT,PCLMUL,POPCNT VectorSize=256
+// Job: Job-QZCOHK(IterationCount=10, WarmupCount=1)
+
+OverheadJitting  1: 1 op, 467785.00 ns, 467.7850 us/op
+WorkloadJitting  1: 1 op, 27139447512.00 ns, 27.1394 s/op
+
+WorkloadWarmup   1: 1 op, 26136465046.00 ns, 26.1365 s/op
+
+// BeforeActualRun
+WorkloadActual   1: 1 op, 26145899600.00 ns, 26.1459 s/op
+WorkloadActual   2: 1 op, 26327569205.00 ns, 26.3276 s/op
+WorkloadActual   3: 1 op, 26157487760.00 ns, 26.1575 s/op
+WorkloadActual   4: 1 op, 26199483686.00 ns, 26.1995 s/op
+WorkloadActual   5: 1 op, 26305302416.00 ns, 26.3053 s/op
+WorkloadActual   6: 1 op, 26318627535.00 ns, 26.3186 s/op
+WorkloadActual   7: 1 op, 26304462651.00 ns, 26.3045 s/op
+WorkloadActual   8: 1 op, 26421477419.00 ns, 26.4215 s/op
+WorkloadActual   9: 1 op, 26342405948.00 ns, 26.3424 s/op
+WorkloadActual  10: 1 op, 26522372528.00 ns, 26.5224 s/op
+
+// AfterActualRun
+WorkloadResult   1: 1 op, 26145899600.00 ns, 26.1459 s/op
+WorkloadResult   2: 1 op, 26327569205.00 ns, 26.3276 s/op
+WorkloadResult   3: 1 op, 26157487760.00 ns, 26.1575 s/op
+WorkloadResult   4: 1 op, 26199483686.00 ns, 26.1995 s/op
+WorkloadResult   5: 1 op, 26305302416.00 ns, 26.3053 s/op
+WorkloadResult   6: 1 op, 26318627535.00 ns, 26.3186 s/op
+WorkloadResult   7: 1 op, 26304462651.00 ns, 26.3045 s/op
+WorkloadResult   8: 1 op, 26421477419.00 ns, 26.4215 s/op
+WorkloadResult   9: 1 op, 26342405948.00 ns, 26.3424 s/op
+// GC:  32 11 4 12554388368 1
+// Threading:  0 0 1
+
+// AfterAll
+// Benchmark Process 2613884 has exited with code 0.
+
+Mean = 26.280 s, StdErr = 0.031 s (0.12%), N = 9, StdDev = 0.092 s
+Min = 26.146 s, Q1 = 26.199 s, Median = 26.305 s, Q3 = 26.328 s, Max = 26.421 s
+IQR = 0.128 s, LowerFence = 26.007 s, UpperFence = 26.520 s
+ConfidenceInterval = [26.125 s; 26.436 s] (CI 99.9%), Margin = 0.155 s (0.59% of Mean)
+Skewness = -0.22, Kurtosis = 1.55, MValue = 2
+
+// ** Remained 3 (37.5 %) benchmark(s) to run. Estimated finish 2025-04-26 6:08 (1h 9m from now) **
+// **************************
+// Benchmark: IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=2MB.txt]
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet 529f7dd9-a738-4c42-8c4a-6b4e56bb9994.dll --anonymousPipes 119 120 --benchmarkName "SearchEngineProject.IndexConstructionBenchmark.BenchmarkIndexConstruction(FileName: \"2MB.txt\")" --job "IterationCount=10, WarmupCount=1" --benchmarkId 5 in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0
+// Failed to set up high priority (Permission denied). In order to run benchmarks with high priority, make sure you have the right permissions.
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// BenchmarkDotNet v0.14.0
+// Runtime=.NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+// GC=Concurrent Server
+// HardwareIntrinsics=AVX2,AES,BMI1,BMI2,FMA,LZCNT,PCLMUL,POPCNT VectorSize=256
+// Job: Job-MFGIAC(IterationCount=10, WarmupCount=1)
+
+OverheadJitting  1: 1 op, 435778.00 ns, 435.7780 us/op
+WorkloadJitting  1: 1 op, 2447310928.00 ns, 2.4473 s/op
+
+OverheadJitting  2: 1 op, 619.00 ns, 619.0000 ns/op
+WorkloadJitting  2: 1 op, 1517143007.00 ns, 1.5171 s/op
+
+WorkloadWarmup   1: 1 op, 1477815254.00 ns, 1.4778 s/op
+
+// BeforeActualRun
+WorkloadActual   1: 1 op, 1471258888.00 ns, 1.4713 s/op
+WorkloadActual   2: 1 op, 1473341054.00 ns, 1.4733 s/op
+WorkloadActual   3: 1 op, 1474046853.00 ns, 1.4740 s/op
+WorkloadActual   4: 1 op, 1477904374.00 ns, 1.4779 s/op
+WorkloadActual   5: 1 op, 1449446974.00 ns, 1.4494 s/op
+WorkloadActual   6: 1 op, 1461781798.00 ns, 1.4618 s/op
+WorkloadActual   7: 1 op, 1456423102.00 ns, 1.4564 s/op
+WorkloadActual   8: 1 op, 1454975445.00 ns, 1.4550 s/op
+WorkloadActual   9: 1 op, 1468655050.00 ns, 1.4687 s/op
+WorkloadActual  10: 1 op, 1479868300.00 ns, 1.4799 s/op
+
+// AfterActualRun
+WorkloadResult   1: 1 op, 1471258888.00 ns, 1.4713 s/op
+WorkloadResult   2: 1 op, 1473341054.00 ns, 1.4733 s/op
+WorkloadResult   3: 1 op, 1474046853.00 ns, 1.4740 s/op
+WorkloadResult   4: 1 op, 1477904374.00 ns, 1.4779 s/op
+WorkloadResult   5: 1 op, 1449446974.00 ns, 1.4494 s/op
+WorkloadResult   6: 1 op, 1461781798.00 ns, 1.4618 s/op
+WorkloadResult   7: 1 op, 1456423102.00 ns, 1.4564 s/op
+WorkloadResult   8: 1 op, 1454975445.00 ns, 1.4550 s/op
+WorkloadResult   9: 1 op, 1468655050.00 ns, 1.4687 s/op
+WorkloadResult  10: 1 op, 1479868300.00 ns, 1.4799 s/op
+// GC:  2 1 0 1239724608 1
+// Threading:  0 0 1
+
+// AfterAll
+// Benchmark Process 2614819 has exited with code 0.
+
+Mean = 1.467 s, StdErr = 0.003 s (0.23%), N = 10, StdDev = 0.010 s
+Min = 1.449 s, Q1 = 1.458 s, Median = 1.470 s, Q3 = 1.474 s, Max = 1.480 s
+IQR = 0.016 s, LowerFence = 1.434 s, UpperFence = 1.498 s
+ConfidenceInterval = [1.451 s; 1.483 s] (CI 99.9%), Margin = 0.016 s (1.08% of Mean)
+Skewness = -0.32, Kurtosis = 1.43, MValue = 2
+
+// ** Remained 2 (25.0 %) benchmark(s) to run. Estimated finish 2025-04-26 5:38 (0h 38m from now) **
+// **************************
+// Benchmark: IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=50MB.txt]
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet 529f7dd9-a738-4c42-8c4a-6b4e56bb9994.dll --anonymousPipes 119 120 --benchmarkName "SearchEngineProject.IndexConstructionBenchmark.BenchmarkIndexConstruction(FileName: \"50MB.txt\")" --job "IterationCount=10, WarmupCount=1" --benchmarkId 6 in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0
+// Failed to set up high priority (Permission denied). In order to run benchmarks with high priority, make sure you have the right permissions.
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// BenchmarkDotNet v0.14.0
+// Runtime=.NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+// GC=Concurrent Server
+// HardwareIntrinsics=AVX2,AES,BMI1,BMI2,FMA,LZCNT,PCLMUL,POPCNT VectorSize=256
+// Job: Job-PJVNMI(IterationCount=10, WarmupCount=1)
+
+OverheadJitting  1: 1 op, 459593.00 ns, 459.5930 us/op
+WorkloadJitting  1: 1 op, 127990547938.00 ns, 2.1332 m/op
+
+WorkloadWarmup   1: 1 op, 126807160861.00 ns, 2.1135 m/op
+
+// BeforeActualRun
+WorkloadActual   1: 1 op, 127362329213.00 ns, 2.1227 m/op
+WorkloadActual   2: 1 op, 128882055060.00 ns, 2.1480 m/op
+WorkloadActual   3: 1 op, 129807411425.00 ns, 2.1635 m/op
+WorkloadActual   4: 1 op, 128936926657.00 ns, 2.1489 m/op
+WorkloadActual   5: 1 op, 129339561048.00 ns, 2.1557 m/op
+WorkloadActual   6: 1 op, 128759009093.00 ns, 2.1460 m/op
+WorkloadActual   7: 1 op, 128396036336.00 ns, 2.1399 m/op
+WorkloadActual   8: 1 op, 130239850972.00 ns, 2.1707 m/op
+WorkloadActual   9: 1 op, 129410275599.00 ns, 2.1568 m/op
+WorkloadActual  10: 1 op, 128426192770.00 ns, 2.1404 m/op
+
+// AfterActualRun
+WorkloadResult   1: 1 op, 127362329213.00 ns, 2.1227 m/op
+WorkloadResult   2: 1 op, 128882055060.00 ns, 2.1480 m/op
+WorkloadResult   3: 1 op, 129807411425.00 ns, 2.1635 m/op
+WorkloadResult   4: 1 op, 128936926657.00 ns, 2.1489 m/op
+WorkloadResult   5: 1 op, 129339561048.00 ns, 2.1557 m/op
+WorkloadResult   6: 1 op, 128759009093.00 ns, 2.1460 m/op
+WorkloadResult   7: 1 op, 128396036336.00 ns, 2.1399 m/op
+WorkloadResult   8: 1 op, 130239850972.00 ns, 2.1707 m/op
+WorkloadResult   9: 1 op, 129410275599.00 ns, 2.1568 m/op
+WorkloadResult  10: 1 op, 128426192770.00 ns, 2.1404 m/op
+// GC:  75 23 5 31338400768 1
+// Threading:  0 0 1
+
+// AfterAll
+// Benchmark Process 2614901 has exited with code 0.
+
+Mean = 2.149 m, StdErr = 0.004 m (0.20%), N = 10, StdDev = 0.014 m
+Min = 2.123 m, Q1 = 2.142 m, Median = 2.148 m, Q3 = 2.157 m, Max = 2.171 m
+IQR = 0.015 m, LowerFence = 2.120 m, UpperFence = 2.179 m
+ConfidenceInterval = [2.129 m; 2.170 m] (CI 99.9%), Margin = 0.020 m (0.95% of Mean)
+Skewness = -0.28, Kurtosis = 2.31, MValue = 2
+
+// ** Remained 1 (12.5 %) benchmark(s) to run. Estimated finish 2025-04-26 5:48 (0h 20m from now) **
+// **************************
+// Benchmark: IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=5MB.txt]
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet 529f7dd9-a738-4c42-8c4a-6b4e56bb9994.dll --anonymousPipes 119 120 --benchmarkName "SearchEngineProject.IndexConstructionBenchmark.BenchmarkIndexConstruction(FileName: \"5MB.txt\")" --job "IterationCount=10, WarmupCount=1" --benchmarkId 7 in /zhome/6b/1/188023/Desktop/search-engine-project/bin/RELEASE/net8.0/529f7dd9-a738-4c42-8c4a-6b4e56bb9994/bin/Release/net8.0
+// Failed to set up high priority (Permission denied). In order to run benchmarks with high priority, make sure you have the right permissions.
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// BenchmarkDotNet v0.14.0
+// Runtime=.NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+// GC=Concurrent Server
+// HardwareIntrinsics=AVX2,AES,BMI1,BMI2,FMA,LZCNT,PCLMUL,POPCNT VectorSize=256
+// Job: Job-UILGFK(IterationCount=10, WarmupCount=1)
+
+OverheadJitting  1: 1 op, 450385.00 ns, 450.3850 us/op
+WorkloadJitting  1: 1 op, 4874128039.00 ns, 4.8741 s/op
+
+OverheadJitting  2: 1 op, 392.00 ns, 392.0000 ns/op
+WorkloadJitting  2: 1 op, 3950362443.00 ns, 3.9504 s/op
+
+WorkloadWarmup   1: 1 op, 3885317643.00 ns, 3.8853 s/op
+
+// BeforeActualRun
+WorkloadActual   1: 1 op, 4086487867.00 ns, 4.0865 s/op
+WorkloadActual   2: 1 op, 3944404303.00 ns, 3.9444 s/op
+WorkloadActual   3: 1 op, 3937422463.00 ns, 3.9374 s/op
+WorkloadActual   4: 1 op, 3903092063.00 ns, 3.9031 s/op
+WorkloadActual   5: 1 op, 3914924835.00 ns, 3.9149 s/op
+WorkloadActual   6: 1 op, 3892800993.00 ns, 3.8928 s/op
+WorkloadActual   7: 1 op, 3939817848.00 ns, 3.9398 s/op
+WorkloadActual   8: 1 op, 3925205136.00 ns, 3.9252 s/op
+WorkloadActual   9: 1 op, 3907689736.00 ns, 3.9077 s/op
+WorkloadActual  10: 1 op, 3906756568.00 ns, 3.9068 s/op
+
+// AfterActualRun
+WorkloadResult   1: 1 op, 3944404303.00 ns, 3.9444 s/op
+WorkloadResult   2: 1 op, 3937422463.00 ns, 3.9374 s/op
+WorkloadResult   3: 1 op, 3903092063.00 ns, 3.9031 s/op
+WorkloadResult   4: 1 op, 3914924835.00 ns, 3.9149 s/op
+WorkloadResult   5: 1 op, 3892800993.00 ns, 3.8928 s/op
+WorkloadResult   6: 1 op, 3939817848.00 ns, 3.9398 s/op
+WorkloadResult   7: 1 op, 3925205136.00 ns, 3.9252 s/op
+WorkloadResult   8: 1 op, 3907689736.00 ns, 3.9077 s/op
+WorkloadResult   9: 1 op, 3906756568.00 ns, 3.9068 s/op
+// GC:  6 2 0 3107423920 1
+// Threading:  0 0 1
+
+// AfterAll
+// Benchmark Process 2619740 has exited with code 0.
+
+Mean = 3.919 s, StdErr = 0.006 s (0.16%), N = 9, StdDev = 0.018 s
+Min = 3.893 s, Q1 = 3.907 s, Median = 3.915 s, Q3 = 3.937 s, Max = 3.944 s
+IQR = 0.031 s, LowerFence = 3.861 s, UpperFence = 3.983 s
+ConfidenceInterval = [3.888 s; 3.950 s] (CI 99.9%), Margin = 0.031 s (0.79% of Mean)
+Skewness = 0.1, Kurtosis = 1.27, MValue = 2
+
+// ** Remained 0 (0.0 %) benchmark(s) to run. Estimated finish 2025-04-26 5:28 (0h 0m from now) **
+// ***** BenchmarkRunner: Finish  *****
+
+// * Export *
+  BenchmarkDotNet.Artifacts/results/SearchEngineProject.IndexConstructionBenchmark-report.csv
+  BenchmarkDotNet.Artifacts/results/SearchEngineProject.IndexConstructionBenchmark-report-github.md
+  BenchmarkDotNet.Artifacts/results/SearchEngineProject.IndexConstructionBenchmark-report.html
+
+// * Detailed results *
+IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=100KB.txt]
+Runtime = .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2; GC = Concurrent Server
+Mean = 59.719 ms, StdErr = 0.272 ms (0.46%), N = 9, StdDev = 0.817 ms
+Min = 58.059 ms, Q1 = 59.909 ms, Median = 59.988 ms, Q3 = 60.085 ms, Max = 60.605 ms
+IQR = 0.177 ms, LowerFence = 59.644 ms, UpperFence = 60.350 ms
+ConfidenceInterval = [58.345 ms; 61.093 ms] (CI 99.9%), Margin = 1.374 ms (2.30% of Mean)
+Skewness = -0.99, Kurtosis = 2.4, MValue = 2
+-------------------- Histogram --------------------
+[57.767 ms ; 60.859 ms) | @@@@@@@@@
+---------------------------------------------------
+
+IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=100MB.txt]
+Runtime = .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2; GC = Concurrent Server
+Mean = 8.241 m, StdErr = 0.008 m (0.10%), N = 10, StdDev = 0.025 m
+Min = 8.209 m, Q1 = 8.221 m, Median = 8.242 m, Q3 = 8.261 m, Max = 8.276 m
+IQR = 0.040 m, LowerFence = 8.160 m, UpperFence = 8.322 m
+ConfidenceInterval = [8.203 m; 8.280 m] (CI 99.9%), Margin = 0.038 m (0.46% of Mean)
+Skewness = -0, Kurtosis = 1.28, MValue = 2
+-------------------- Histogram --------------------
+[8.193 m ; 8.291 m) | @@@@@@@@@@
+---------------------------------------------------
+
+IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=10MB.txt]
+Runtime = .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2; GC = Concurrent Server
+Mean = 9.566 s, StdErr = 0.021 s (0.22%), N = 10, StdDev = 0.068 s
+Min = 9.485 s, Q1 = 9.507 s, Median = 9.564 s, Q3 = 9.609 s, Max = 9.674 s
+IQR = 0.101 s, LowerFence = 9.355 s, UpperFence = 9.761 s
+ConfidenceInterval = [9.463 s; 9.669 s] (CI 99.9%), Margin = 0.103 s (1.07% of Mean)
+Skewness = 0.27, Kurtosis = 1.4, MValue = 2
+-------------------- Histogram --------------------
+[9.444 s ; 9.715 s) | @@@@@@@@@@
+---------------------------------------------------
+
+IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=1MB.txt]
+Runtime = .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2; GC = Concurrent Server
+Mean = 740.101 ms, StdErr = 2.395 ms (0.32%), N = 10, StdDev = 7.574 ms
+Min = 730.222 ms, Q1 = 734.155 ms, Median = 740.669 ms, Q3 = 744.485 ms, Max = 752.849 ms
+IQR = 10.330 ms, LowerFence = 718.660 ms, UpperFence = 759.980 ms
+ConfidenceInterval = [728.650 ms; 751.552 ms] (CI 99.9%), Margin = 11.451 ms (1.55% of Mean)
+Skewness = 0.12, Kurtosis = 1.53, MValue = 2
+-------------------- Histogram --------------------
+[727.062 ms ; 757.463 ms) | @@@@@@@@@@
+---------------------------------------------------
+
+IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=20MB.txt]
+Runtime = .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2; GC = Concurrent Server
+Mean = 26.280 s, StdErr = 0.031 s (0.12%), N = 9, StdDev = 0.092 s
+Min = 26.146 s, Q1 = 26.199 s, Median = 26.305 s, Q3 = 26.328 s, Max = 26.421 s
+IQR = 0.128 s, LowerFence = 26.007 s, UpperFence = 26.520 s
+ConfidenceInterval = [26.125 s; 26.436 s] (CI 99.9%), Margin = 0.155 s (0.59% of Mean)
+Skewness = -0.22, Kurtosis = 1.55, MValue = 2
+-------------------- Histogram --------------------
+[26.088 s ; 26.480 s) | @@@@@@@@@
+---------------------------------------------------
+
+IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=2MB.txt]
+Runtime = .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2; GC = Concurrent Server
+Mean = 1.467 s, StdErr = 0.003 s (0.23%), N = 10, StdDev = 0.010 s
+Min = 1.449 s, Q1 = 1.458 s, Median = 1.470 s, Q3 = 1.474 s, Max = 1.480 s
+IQR = 0.016 s, LowerFence = 1.434 s, UpperFence = 1.498 s
+ConfidenceInterval = [1.451 s; 1.483 s] (CI 99.9%), Margin = 0.016 s (1.08% of Mean)
+Skewness = -0.32, Kurtosis = 1.43, MValue = 2
+-------------------- Histogram --------------------
+[1.443 s ; 1.486 s) | @@@@@@@@@@
+---------------------------------------------------
+
+IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=50MB.txt]
+Runtime = .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2; GC = Concurrent Server
+Mean = 2.149 m, StdErr = 0.004 m (0.20%), N = 10, StdDev = 0.014 m
+Min = 2.123 m, Q1 = 2.142 m, Median = 2.148 m, Q3 = 2.157 m, Max = 2.171 m
+IQR = 0.015 m, LowerFence = 2.120 m, UpperFence = 2.179 m
+ConfidenceInterval = [2.129 m; 2.170 m] (CI 99.9%), Margin = 0.020 m (0.95% of Mean)
+Skewness = -0.28, Kurtosis = 2.31, MValue = 2
+-------------------- Histogram --------------------
+[2.114 m ; 2.179 m) | @@@@@@@@@@
+---------------------------------------------------
+
+IndexConstructionBenchmark.BenchmarkIndexConstruction: Job-UOWWVG(IterationCount=10, WarmupCount=1) [FileName=5MB.txt]
+Runtime = .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2; GC = Concurrent Server
+Mean = 3.919 s, StdErr = 0.006 s (0.16%), N = 9, StdDev = 0.018 s
+Min = 3.893 s, Q1 = 3.907 s, Median = 3.915 s, Q3 = 3.937 s, Max = 3.944 s
+IQR = 0.031 s, LowerFence = 3.861 s, UpperFence = 3.983 s
+ConfidenceInterval = [3.888 s; 3.950 s] (CI 99.9%), Margin = 0.031 s (0.79% of Mean)
+Skewness = 0.1, Kurtosis = 1.27, MValue = 2
+-------------------- Histogram --------------------
+[3.881 s ; 3.956 s) | @@@@@@@@@
+---------------------------------------------------
+
+// * Summary *
+
+BenchmarkDotNet v0.14.0, AlmaLinux 9.5 (Teal Serval)
+Intel Xeon CPU E5-2670 v3 2.30GHz, 2 CPU, 24 logical and 24 physical cores
+.NET SDK 8.0.406
+  [Host]     : .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+  Job-UOWWVG : .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+
+IterationCount=10  WarmupCount=1  
+
+| Method                     | FileName  | Mean          | Error        | StdDev       | Gen0        | Gen1       | Gen2      | Allocated   |
+|--------------------------- |---------- |--------------:|-------------:|-------------:|------------:|-----------:|----------:|------------:|
+| BenchmarkIndexConstruction | 100KB.txt |      59.72 ms |     1.374 ms |     0.817 ms |           - |          - |         - |     50.8 MB |
+| BenchmarkIndexConstruction | 100MB.txt | 494,489.26 ms | 2,287.952 ms | 1,513.339 ms | 143000.0000 | 43000.0000 | 7000.0000 | 59770.91 MB |
+| BenchmarkIndexConstruction | 10MB.txt  |   9,565.98 ms |   102.586 ms |    67.854 ms |  15000.0000 |  6000.0000 | 2000.0000 |  5972.66 MB |
+| BenchmarkIndexConstruction | 1MB.txt   |     740.10 ms |    11.451 ms |     7.574 ms |   1000.0000 |          - |         - |   593.28 MB |
+| BenchmarkIndexConstruction | 20MB.txt  |  26,280.30 ms |   155.359 ms |    92.451 ms |  32000.0000 | 11000.0000 | 4000.0000 |  11972.8 MB |
+| BenchmarkIndexConstruction | 2MB.txt   |   1,466.77 ms |    15.829 ms |    10.470 ms |   2000.0000 |  1000.0000 |         - |  1182.29 MB |
+| BenchmarkIndexConstruction | 50MB.txt  | 128,955.96 ms | 1,224.650 ms |   810.030 ms |  75000.0000 | 23000.0000 | 5000.0000 | 29886.63 MB |
+| BenchmarkIndexConstruction | 5MB.txt   |   3,919.12 ms |    30.817 ms |    18.338 ms |   6000.0000 |  2000.0000 |         - |  2963.47 MB |
+
+// * Hints *
+Outliers
+  IndexConstructionBenchmark.BenchmarkIndexConstruction: IterationCount=10, WarmupCount=1 -> 1 outlier  was  removed, 3 outliers were detected (58.06 ms, 58.64 ms, 67.78 ms)
+  IndexConstructionBenchmark.BenchmarkIndexConstruction: IterationCount=10, WarmupCount=1 -> 1 outlier  was  removed (26.52 s)
+  IndexConstructionBenchmark.BenchmarkIndexConstruction: IterationCount=10, WarmupCount=1 -> 1 outlier  was  removed (4.09 s)
+// * Config Issues *
+
+// * Warnings *
+Configuration
+  Summary -> The exporter CsvExporter is already present in configuration. There may be unexpected results.
+
+// * Legends *
+  FileName  : Value of the 'FileName' parameter
+  Mean      : Arithmetic mean of all measurements
+  Error     : Half of 99.9% confidence interval
+  StdDev    : Standard deviation of all measurements
+  Gen0      : GC Generation 0 collects per 1000 operations
+  Gen1      : GC Generation 1 collects per 1000 operations
+  Gen2      : GC Generation 2 collects per 1000 operations
+  Allocated : Allocated memory per single operation (managed only, inclusive, 1KB = 1024B)
+  1 ms      : 1 Millisecond (0.001 sec)
+
+// * Diagnostic Output - MemoryDiagnoser *
+
+
+// ***** BenchmarkRunner: End *****
+Run time: 02:24:21 (8661.18 sec), executed benchmarks: 8
+
+Global total time: 02:24:40 (8680.88 sec), executed benchmarks: 8
+// * Artifacts cleanup *
+Artifacts cleanup is finished

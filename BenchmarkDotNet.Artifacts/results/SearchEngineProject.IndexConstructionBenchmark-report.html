@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>SearchEngineProject.IndexConstructionBenchmark-20250426-030422</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.14.0, AlmaLinux 9.5 (Teal Serval)
+Intel Xeon CPU E5-2670 v3 2.30GHz, 2 CPU, 24 logical and 24 physical cores
+.NET SDK 8.0.406
+  [Host]     : .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+  Job-UOWWVG : .NET 8.0.13 (8.0.1325.6609), X64 RyuJIT AVX2
+</code></pre>
+<pre><code>IterationCount=10  WarmupCount=1  
+</code></pre>
+
+<table>
+<thead><tr><th>Method              </th><th>FileName</th><th>Mean   </th><th>Error </th><th>StdDev</th><th>Gen0 </th><th>Gen1</th><th>Gen2</th><th>Allocated</th>
+</tr>
+</thead><tbody><tr><td>BenchmarkIndexConstruction</td><td>100KB.txt</td><td>59.72 ms</td><td>1.374 ms</td><td>0.817 ms</td><td>-</td><td>-</td><td>-</td><td>50.8 MB</td>
+</tr><tr><td>BenchmarkIndexConstruction</td><td>100MB.txt</td><td>494,489.26 ms</td><td>2,287.952 ms</td><td>1,513.339 ms</td><td>143000.0000</td><td>43000.0000</td><td>7000.0000</td><td>59770.91 MB</td>
+</tr><tr><td>BenchmarkIndexConstruction</td><td>10MB.txt</td><td>9,565.98 ms</td><td>102.586 ms</td><td>67.854 ms</td><td>15000.0000</td><td>6000.0000</td><td>2000.0000</td><td>5972.66 MB</td>
+</tr><tr><td>BenchmarkIndexConstruction</td><td>1MB.txt</td><td>740.10 ms</td><td>11.451 ms</td><td>7.574 ms</td><td>1000.0000</td><td>-</td><td>-</td><td>593.28 MB</td>
+</tr><tr><td>BenchmarkIndexConstruction</td><td>20MB.txt</td><td>26,280.30 ms</td><td>155.359 ms</td><td>92.451 ms</td><td>32000.0000</td><td>11000.0000</td><td>4000.0000</td><td>11972.8 MB</td>
+</tr><tr><td>BenchmarkIndexConstruction</td><td>2MB.txt</td><td>1,466.77 ms</td><td>15.829 ms</td><td>10.470 ms</td><td>2000.0000</td><td>1000.0000</td><td>-</td><td>1182.29 MB</td>
+</tr><tr><td>BenchmarkIndexConstruction</td><td>50MB.txt</td><td>128,955.96 ms</td><td>1,224.650 ms</td><td>810.030 ms</td><td>75000.0000</td><td>23000.0000</td><td>5000.0000</td><td>29886.63 MB</td>
+</tr><tr><td>BenchmarkIndexConstruction</td><td>5MB.txt</td><td>3,919.12 ms</td><td>30.817 ms</td><td>18.338 ms</td><td>6000.0000</td><td>2000.0000</td><td>-</td><td>2963.47 MB</td>
+</tr></tbody></table>
+</body>
+</html>
