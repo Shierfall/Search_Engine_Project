@@ -46,6 +46,10 @@
       <Content Include="appsettings.Development.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <Content Include="50MB.txt">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -53,9 +57,13 @@
       <Content Include="wwwroot\**\*">
         <CopyToPublishDirectory>Always</CopyToPublishDirectory>
       </Content>
+      <Content Include="quicktest.db">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
     </ItemGroup>
 
-    <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
-      <Exec Command="bash $(MSBuildProjectDirectory)/prepublish.sh" />
-    </Target>
+    <!-- <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish"> -->
+    <!--   <Exec Command="bash $(MSBuildProjectDirectory)/prepublish.sh" /> -->
+    <!-- </Target> -->
 </Project>

@@ -80,45 +80,57 @@ public class IndexingService : IIndexingService
 
     public async Task<bool> RemoveDocumentAsync(int docId)
     {
-        // Remove from database
-        bool existed = await _docs.DeleteAsync(docId);
-        if (!existed) return false;
-
-        // Remove from prefix indexes
+        // first, get the tokens for the document. We need them to clean the indexes.
         var tokens = await _docs.GetIndexedTokensAsync(docId);
+        if (tokens == null || !tokens.Any())
+        {
+            // if there are no tokens, the document might not exist or was never indexed.
+            // try to delete it from the DB just in case.
+            // delete terms just in case they are orphaned.
+            await _docs.DeleteTermsAsync(docId);
+            return await _docs.DeleteAsync(docId);
+        }
+
+        // remove from prefix indexes
         foreach (var index in _prefixIndexes)
         {
             index.RemoveDocument(docId, tokens);
         }
 
-        // Remove from full-text index
+        // remove from full-text index
         _fullTextIndex.RemoveDocument(docId, tokens);
 
-        return true;
+        // the bloom filter is probabilistic and doesn't support removal, which is fine.
+
+        // now that the in-memory indexes are clean, remove from the database.
+        await _docs.DeleteTermsAsync(docId); // remove the terms
+        bool existed = await _docs.DeleteAsync(docId); // then remove the document metadata
+
+        return existed;
     }
 
     public async Task RebuildIndexAsync()
     {
         var totalTimer = Stopwatch.StartNew();
         
-        // Clear all indexes
+        // clear all indexes
         foreach (var index in _prefixIndexes)
         {
             index.Clear();
         }
         _fullTextIndex.Clear();
         
-        // Rebuild from database
+        // rebuild from database
         var docs = await _docs.GetAllAsync();
         if (docs.Count == 0) return;
         
         _logger.LogInformation("Rebuilding index for {DocumentCount} documents", docs.Count);
         
-        // Pre-allocate for better memory usage
+        // pre-allocate for better memory usage
         var allUniqueTerms = new ConcurrentDictionary<string, byte>();
         var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = _maxParallelism };
         
-        // Process in large batches
+        // process in large batches
         for (int i = 0; i < docs.Count; i += BATCH_SIZE)
         {
             var batchTimer = Stopwatch.StartNew();
@@ -130,16 +142,16 @@ public class IndexingService : IIndexingService
             _logger.LogInformation("Processing batch {BatchNumber} of {TotalBatches} ({BatchSize} documents)", 
                 batchNumber, totalBatches, batchDocs.Count);
             
-            // Process all docs in the batch in parallel with minimal contention
+            // process all docs in the batch in parallel with minimal contention
             var docTokensBatch = new ConcurrentBag<(int docId, List<Token> tokens)>();
             
-            // Step 1: Fetch tokens for all documents in batch - most time consuming part
+            // fetch tokens for all documents in batch - most time consuming part
             var fetchTimer = Stopwatch.StartNew();
             await Task.WhenAll(batchDocs.Select(async doc => {
                 var tokens = await _docs.GetIndexedTokensAsync(doc.Id);
                 docTokensBatch.Add((doc.Id, tokens.ToList()));
                 
-                // Collect unique terms for bloom filter
+                // collect unique terms for bloom filter
                 foreach (var term in tokens.Select(t => t.Term).Distinct())
                 {
                     allUniqueTerms.TryAdd(term, 0);
@@ -148,21 +160,21 @@ public class IndexingService : IIndexingService
             fetchTimer.Stop();
             _logger.LogDebug("Batch {BatchNumber}: Token fetch time: {Time}ms", batchNumber, fetchTimer.ElapsedMilliseconds);
             
-            // Step 2: Prepare data for indexing
+            // prepare data for indexing
             var processedBatch = docTokensBatch.Select(r => (r.docId, (IEnumerable<Token>)r.tokens)).ToList();
             
-            // Step 3: Index in parallel across prefix indexes - these can be done independently
+            // ndex in parallel across prefix indexes - these can be done independently
             var indexTimer = Stopwatch.StartNew();
             await Task.WhenAll(_prefixIndexes.Select(index => 
                 Task.Run(() => index.AddDocumentsBatch(processedBatch))
             ));
             
-            // Step 4: Update full-text index
+            // update full-text index
             await Task.Run(() => _fullTextIndex.AddDocumentsBatch(processedBatch));
             indexTimer.Stop();
             _logger.LogDebug("Batch {BatchNumber}: Index update time: {Time}ms", batchNumber, indexTimer.ElapsedMilliseconds);
             
-            // Step 5: Run GC occasionally to prevent memory pressure
+            // run GC occasionally to prevent memory pressure
             if (batchNumber % GC_FREQUENCY == 0)
             {
                 var gcTimer = Stopwatch.StartNew();
@@ -175,7 +187,7 @@ public class IndexingService : IIndexingService
             _logger.LogInformation("Batch {BatchNumber} completed in {Time}ms", batchNumber, batchTimer.ElapsedMilliseconds);
         }
         
-        // Final step: Update bloom filter with all terms (single operation is more efficient)
+        // update bloom filter with all terms (single operation is more efficient)
         var bloomTimer = Stopwatch.StartNew();
         _logger.LogInformation("Adding {TermCount} unique terms to bloom filter", allUniqueTerms.Count);
         _bloomFilter.AddBatch(allUniqueTerms.Keys);
@@ -248,16 +260,16 @@ public class IndexingService : IIndexingService
             }
         }
         
-        // Add final batch if not empty
+        // add final batch if not empty
         if (currentBatch.Count > 0)
         {
             dbBatches.Add(currentBatch);
         }
         
-        // Process each DB batch sequentially (better for DB performance)
+        // process each DB batch sequentially (better for DB performance)
         foreach (var batch in dbBatches)
         {
-            // Process documents in this batch in parallel
+            // process documents in this batch in parallel
             await Task.WhenAll(batch.Select(item => 
                 _terms.BulkUpsertTermsAsync(item.docId, item.tokens)
             ));
@@ -266,21 +278,21 @@ public class IndexingService : IIndexingService
         dbTimer.Stop();
         _logger.LogDebug("DB operation time: {Time}ms", dbTimer.ElapsedMilliseconds);
         
-        // Step 4: Update indexes in parallel - for maximum throughput
+        // update indexes in parallel - for maximum throughput
         var indexTimer = Stopwatch.StartNew();
         
-        // Run each index update as a separate task
+        // run each index update as a separate task
         var indexTasks = _prefixIndexes.Select(index => 
             Task.Run(() => index.AddDocumentsBatch(docTokensBatch))
         ).ToList();
         
-        // Add full-text index task
+        // add full-text index task
         indexTasks.Add(Task.Run(() => _fullTextIndex.AddDocumentsBatch(docTokensBatch)));
         
-        // Add bloom filter task
+        // add bloom filter task
         indexTasks.Add(Task.Run(() => _bloomFilter.AddBatch(allTerms)));
         
-        // Wait for all index updates to complete
+        // wait for all index updates to complete
         await Task.WhenAll(indexTasks);
         
         indexTimer.Stop();

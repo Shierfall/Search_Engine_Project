@@ -95,31 +95,57 @@ public class SimpleTrieIndex : IExactPrefixIndex
         node.DocCounts[docId] = node.DocCounts.GetValueOrDefault(docId, 0) + 1;
     }
 
-    private void Remove(TrieNode node, int poolIdx, int offset, int length, int docId)
+    private bool Remove(TrieNode node, int poolIdx, int offset, int length, int docId)
     {
         if (length == 0)
         {
             UnmarkNode(node, docId);
-            return;
-        }
-
-        var word = wordPool[poolIdx];
-        var c = word[offset];
-
-        TrieNode child = null;
-        if (c >= 'a' && c <= 'z')
-        {
-            child = node.ArrayChildren[c - 'a'];
         }
         else
         {
-            node.DictChildren.TryGetValue(c, out child);
+            var word = wordPool[poolIdx];
+            var c = word[offset];
+            TrieNode child = null;
+            int childArrIndex = -1;
+
+            if (c >= 'a' && c <= 'z')
+            {
+                childArrIndex = c - 'a';
+                child = node.ArrayChildren[childArrIndex];
+            }
+            else
+            {
+                node.DictChildren.TryGetValue(c, out child);
+            }
+
+            if (child != null)
+            {
+                if (Remove(child, poolIdx, offset + 1, length - 1, docId))
+                {
+                    if (childArrIndex != -1)
+                    {
+                        node.ArrayChildren[childArrIndex] = null;
+                    }
+                    else
+                    {
+                        node.DictChildren.Remove(c);
+                    }
+                }
+            }
         }
 
-        if (child != null)
+        if (!node.IsEndOfWord)
         {
-            Remove(child, poolIdx, offset + 1, length - 1, docId);
+            foreach (var child in node.ArrayChildren)
+            {
+                if (child != null) return false;
+            }
+            if (node.DictChildren.Count > 0) return false;
+
+            return true;
         }
+
+        return false;
     }
 
     private void UnmarkNode(TrieNode node, int docId)
