@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 // API base URL
-const API_BASE_URL = '/api';
-//const API_BASE_URL = 'http://localhost:5268/api';
+//const API_BASE_URL = '/api';
+const API_BASE_URL = 'http://localhost:5268/api';
 
 const WikipediaImporter = () => {
   const [title, setTitle] = useState('');
