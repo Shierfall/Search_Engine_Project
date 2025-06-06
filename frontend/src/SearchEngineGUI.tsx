@@ -7,7 +7,7 @@ import debounce from 'lodash/debounce';
 import axios from 'axios';
 
 // connect to the backend API
-const API_BASE_URL = 'http://localhost:5268/api';
+const API_BASE_URL = '/api';
 
 // keep te simple API functions outside the component
 const checkTermExists = async (term: string): Promise<boolean> => {
