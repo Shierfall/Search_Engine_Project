@@ -162,6 +162,21 @@ namespace ManualBenchmarks
                 invertedTimer.Stop();
                 Console.WriteLine($"Inverted index indexing time: {invertedTimer.ElapsedMilliseconds}ms");
 
+                // index for bloom filter
+                var bloomFilter = new BloomFilter(1000000, 0.01); // assuming max 1M unique terms
+                var bloomTimer = Stopwatch.StartNew();
+                
+                foreach (var (docId, tokens) in documentTokens)
+                {
+                    foreach (var token in tokens)
+                    {
+                        bloomFilter.Add(token.Term);
+                    }
+                }
+                
+                bloomTimer.Stop();
+                Console.WriteLine($"Bloom filter indexing time: {bloomTimer.ElapsedMilliseconds}ms");
+
                 foreach (var (searchMethod, queries) in QueryCategories)
                 {
                     foreach (var query in queries)
@@ -223,6 +238,21 @@ namespace ManualBenchmarks
                         }
                         double meanInv = totalTimeInv / Iterations;
                         writer.WriteLine($"{fileSize},InvertedIndex,{searchMethod},{query},{meanInv.ToString(CultureInfo.InvariantCulture)}");
+
+                        // bloom filter (only for exact search since it only supports existence checks)
+                        if (searchMethod == SearchMethod.Exact)
+                        {
+                            double totalTimeBloom = 0;
+                            for (int i = 0; i < Iterations; i++)
+                            {
+                                var sw = Stopwatch.StartNew();
+                                bloomFilter.MightContain(query);
+                                sw.Stop();
+                                totalTimeBloom += sw.Elapsed.TotalMilliseconds;
+                            }
+                            double meanBloom = totalTimeBloom / Iterations;
+                            writer.WriteLine($"{fileSize},BloomFilter,{searchMethod},{query},{meanBloom.ToString(CultureInfo.InvariantCulture)}");
+                        }
                     }
                 }
                 writer.Flush();

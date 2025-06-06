@@ -1,4 +1,3 @@
-import React from 'react';
 import SearchEngineGUI from './SearchEngineGUI';
 
 function App() {
