@@ -46,19 +46,11 @@
       <Content Include="appsettings.Development.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
-      <Content Include="50MB.txt">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
-      </Content>
     </ItemGroup>
 
     <ItemGroup>
       <!-- include all files/folders under wwwroot -->
       <Content Include="wwwroot\**\*">
-        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
-      </Content>
-      <Content Include="quicktest.db">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <CopyToPublishDirectory>Always</CopyToPublishDirectory>
       </Content>
     </ItemGroup>

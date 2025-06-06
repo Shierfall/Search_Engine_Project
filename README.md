@@ -1,92 +1,72 @@
-# Search Engine Project
+# Search Engine: Build & Run Instructions
 
+This project combines a .NET 9 backend (serving both API and static files) with a React/TypeScript frontend (Vite + Tailwind). Below are the minimal steps to get it up and running locally.
 
+---
+## Install with Docker
+1. Build the image
+    ```bash
+    docker build -t search-engine .
 
-## Getting started
+2. Run without a data file (loads already persisted index (or none if none persisted)):
+    ```bash
+    docker run --rm -p 5268:5268 search-engine
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+App will listen on http://localhost:5268/
+3. Run with a data file:
+```bash
+    docker run --rm -v $(pwd)/50MB.txt:/data/50MB.txt -p 5268:5268 my-search-engine /data/filename.txt
+NOTE: The --rm flag in the docker command means that Docker will automatically remove the container and its filesystem
+    as soon as it exits. So if you want to keep the local Docker container and its contents, then omit the --rm flag
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### Prerequisites
+1. **.NET 9 SDK**  
+   Install from https://dotnet.microsoft.com/download/dotnet/9.0  
+   Verify with:
+   ```bash
+   dotnet --version   # should print something like “9.x.x”
 
-## Add your files
+2. **Node.js (v16 or higher)**
+    Install from https://nodejs.org/
+    Verify with:
+    ```bash 
+    node --version    # v16.x, v18.x or later
+    npm --version     # v8.x or later
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+### Build and Run
 
-```
-cd existing_repo
-git remote add origin https://gitlab.gbar.dtu.dk/s225116/search-engine-project.git
-git branch -M main
-git push -uf origin main
-```
+1. Navigate to the project root (where SearchEngine.csproj is) and run
+    ```bash
+    dotnet restore
+    dotnet build
+2. This technically should be all you need. Run the program with one of the text files from the Project Info website:
+    ```bash
+    dotnet run WestburyLab.wikicorp.201004_.txt
+3. Once processing is complete (or rebuild is complete), open a browser and go to http://localhost:5268/ to use the search engine
+4. If you've already run the program after giving it a file, you can simply run
+    ```bash
+    dotnet run
+This will simply rebuild the index with the persisted data retrieved from the file you gave earlier.
 
-## Integrate with your tools
+### Troubleshooting
 
-- [ ] [Set up project integrations](https://gitlab.gbar.dtu.dk/s225116/search-engine-project/-/settings/integrations)
+1. If you run into issues with the frontend you can run our prepublish script; navigate to the project root:
+    ```bash
+    chmod +x prepublish.sh
+    ./prepublish.sh
 
-## Collaborate with your team
+2. If that still doesn't work then you have to build it manually:
+    ``` bash
+    cd frontend
+    npm install
+    npm run build
+    cd ..
+    chmod +x prepublish.sh
+    ./prepublish.sh
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+## Change ports
+If you need to change ports, set the ASPNETCORE_URLS env variable before running:
+```bash
+    export ASPNETCORE_URLS="http://localhost:8080;https://localhost:8443"
+    dotnet run
 
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
