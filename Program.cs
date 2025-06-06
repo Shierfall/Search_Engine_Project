@@ -44,11 +44,13 @@ builder.Services.AddLogging();
 // configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend",
-        policy => policy
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader());
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5268") // Updated to match the application URL
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
 });
 
 // add search operations
@@ -107,10 +109,17 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
+// In Program.cs
+app.UseStaticFiles();
+app.UseRouting();
+
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthorization();
 app.MapControllers();
+
+// Add this before your controllers/endpoints
+app.MapFallbackToFile("index.html");
 
 // initialize the database and preprocess data if command line args are provided
 using (var scope = app.Services.CreateScope())
