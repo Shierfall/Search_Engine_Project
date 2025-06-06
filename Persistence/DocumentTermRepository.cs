@@ -119,7 +119,7 @@ public class DocumentTermRepository
     /// </summary>
     private async Task BulkInsertEfCoreAsync(int documentId, List<Token> tokens)
     {
-        // Group tokens by term
+        // group tokens by term
         var termGroups = tokens
             .GroupBy(t => t.Term)
             .Select(g => new
@@ -129,7 +129,7 @@ public class DocumentTermRepository
             })
             .ToList();
             
-        // Process in chunks to avoid excessive memory usage
+        // process in chunks to avoid excessive memory usage
         var chunks = termGroups
             .Select((term, index) => new { term, index })
             .GroupBy(x => x.index / SQL_BATCH_SIZE)

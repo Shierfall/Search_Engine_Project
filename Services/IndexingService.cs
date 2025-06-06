@@ -219,11 +219,11 @@ public class IndexingService : IIndexingService
         var batchTimer = Stopwatch.StartNew();
         _logger.LogInformation("Processing batch of {DocumentCount} documents", documents.Count);
         
-        // Step 1: Tokenize all documents in parallel and collect results
+        //  tokenize all documents in parallel and collect results
         var tokenizeTimer = Stopwatch.StartNew();
         var localResults = new ConcurrentBag<(int docId, List<Token> tokens, HashSet<string> terms)>();
         
-        // Set higher degree of parallelism for CPU-bound tokenization
+        // set higher degree of parallelism for CPU-bound tokenization
         var parallelOptions = new ParallelOptions { 
             MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount * 2) 
         };
@@ -238,12 +238,12 @@ public class IndexingService : IIndexingService
         tokenizeTimer.Stop();
         _logger.LogDebug("Tokenization time: {Time}ms", tokenizeTimer.ElapsedMilliseconds);
         
-        // Step 2: Prepare data for DB and indexes
+        // prepare data for DB and indexes
         var dbTimer = Stopwatch.StartNew();
         var docTokensBatch = localResults.Select(r => (r.docId, (IEnumerable<Token>)r.tokens)).ToList();
         var allTerms = new HashSet<string>();
         
-        // Step 3: Batch DB operations for maximum efficiency
+        //  batch DB operations for maximum efficiency
         var dbBatches = new List<List<(int docId, List<Token> tokens)>>();
         var currentBatch = new List<(int docId, List<Token> tokens)>();
         
@@ -252,7 +252,7 @@ public class IndexingService : IIndexingService
             currentBatch.Add((result.docId, result.tokens));
             allTerms.UnionWith(result.terms);
             
-            // Create new batch when size limit reached
+            // ceate new batch when size limit reached
             if (currentBatch.Count >= DB_COMMIT_SIZE)
             {
                 dbBatches.Add(currentBatch);
