@@ -2,23 +2,6 @@
 
 This project combines a .NET 9 backend (serving both API and static files) with a React/TypeScript frontend (Vite + Tailwind). Below are the minimal steps to get it up and running locally.
 
----
-## Install with Docker
-1. Build the image
-    ```bash
-    docker build -t search-engine .
-
-2. Run without a data file (loads already persisted index (or none if none persisted)):
-    ```bash
-    docker run --rm -p 5268:5268 search-engine
-
-App will listen on http://localhost:5268/
-3. Run with a data file:
-```bash
-    docker run --rm -v $(pwd)/50MB.txt:/data/50MB.txt -p 5268:5268 my-search-engine /data/filename.txt
-NOTE: The --rm flag in the docker command means that Docker will automatically remove the container and its filesystem
-    as soon as it exits. So if you want to keep the local Docker container and its contents, then omit the --rm flag
-
 ### Prerequisites
 1. **.NET 9 SDK**  
    Install from https://dotnet.microsoft.com/download/dotnet/9.0  
