@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, Search, ArrowUp, Trash2 } from 'lucide-react';
 import { Button } from './components/ui/button';
@@ -7,7 +7,8 @@ import debounce from 'lodash/debounce';
 import axios from 'axios';
 
 // connect to the backend API
-const API_BASE_URL = 'http://localhost:5268/api';
+// const API_BASE_URL = 'http://localhost:5268/api';
+const API_BASE_URL = '/api';
 
 // keep te simple API functions outside the component
 const checkTermExists = async (term: string): Promise<boolean> => {

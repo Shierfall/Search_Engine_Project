@@ -509,6 +509,7 @@ public class CompactTrieIndex : IExactPrefixIndex, IFullTextIndex
     {
         if (length == 0)
         {
+            // reached the node, remove docId
             node.DocIds.Remove(docId);
             node.Positions.Remove(docId);
             if (node.DocIds.Count == 0)
@@ -521,49 +522,44 @@ public class CompactTrieIndex : IExactPrefixIndex, IFullTextIndex
             char c = wordPool[poolIndex][offset];
             TrieNode child = null;
             int ci = c - 'a';
-            if (ci >= 0 && ci < 26)
+            if (ci >= 0 && ci < 26) child = node.ArrayChildren[ci];
+            else node.DictChildren.TryGetValue(c, out child);
+
+            if (child == null) return false;
+
+            int common = CommonPrefix(child, poolIndex, offset, length);
+            if (common < child.Length)
             {
-                child = node.ArrayChildren[ci];
-            }
-            else
-            {
-                node.DictChildren.TryGetValue(c, out child);
-            }
-            if (child == null)
-            {
+                // the word to remove is a prefix of an edge, so it's not in the trie.
                 return false;
             }
 
-            bool prune = RemoveWord(child, poolIndex, offset + 1, length - 1, docId);
-            if (prune)
+            // recurse
+            if (RemoveWord(child, poolIndex, offset + common, length - common, docId))
             {
-                if (ci >= 0 && ci < 26)
-                {
-                    node.ArrayChildren[ci] = null;
-                }
-                else
-                {
-                    node.DictChildren.Remove(c);
-                }
+                // prune child if it's now empty
+                if (ci >= 0 && ci < 26) node.ArrayChildren[ci] = null;
+                else node.DictChildren.Remove(c);
             }
         }
-        bool hasNoDocs = !node.IsEndOfWord;
-        bool hasNoChildren = true;
-        foreach (var child in node.ArrayChildren)
+        
+        // check if current node can be pruned
+        if (!node.IsEndOfWord)
         {
-            if (child != null)
-            {
-                hasNoChildren = false;
-                break;
+            bool hasChildren = false;
+            foreach (var c in node.ArrayChildren) {
+                if (c != null) 
+                {
+                    hasChildren = true;
+                    break;
+                }
             }
+            if (!hasChildren) hasChildren = node.DictChildren.Count > 0;
+
+            if (!hasChildren) return true; // prune this node
         }
 
-        if (hasNoChildren && node.DictChildren.Count > 0)
-        {
-            hasNoChildren = false;
-        }
-
-        return hasNoDocs && hasNoChildren;
+        return false;
     }
 
     public void Clear()
