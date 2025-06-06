@@ -1,11 +1,12 @@
 using SearchEngine.Analysis.Interfaces;
 using Porter2StemmerStandard;
+using System.Collections.Concurrent;
 namespace SearchEngine.Analysis.Filters;
 
 public class PorterStemFilter : ITokenFilter
 {
     private readonly EnglishPorter2Stemmer _stemmer;
-    private readonly Dictionary<string, string> _stemCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, string> _stemCache = new(StringComparer.OrdinalIgnoreCase);
 
     public PorterStemFilter(EnglishPorter2Stemmer stemmer)
     {
@@ -37,28 +38,24 @@ public class PorterStemFilter : ITokenFilter
 
     private string StemOrGet(string raw)
     {
-        if (_stemCache.TryGetValue(raw, out var cached))
-            return cached;
-        
-        // extra validation to ensure the word is valid for stemming
-        if (raw.Length < 2)
+        return _stemCache.GetOrAdd(raw, key =>
         {
-            _stemCache[raw] = raw;
-            return raw;
-        }
+            // extra validation to ensure the word is valid for stemming
+            if (key.Length < 2)
+            {
+                return key;
+            }
 
-        try
-        {
-            var stemmed = _stemmer.Stem(raw).Value;
-            _stemCache[raw] = stemmed;
-            return stemmed;
-        }
-        catch (Exception)
-        {
-            // if stemming fails for any reason, return the original word
-            _stemCache[raw] = raw;
-            Console.WriteLine($"Stemming failed for word: {raw}");
-            return raw;
-        }
+            try
+            {
+                return _stemmer.Stem(key).Value;
+            }
+            catch (Exception)
+            {
+                // if stemming fails for any reason, return the original word
+                Console.WriteLine($"Stemming failed for word: {key}");
+                return key;
+            }
+        });
     }
 }
