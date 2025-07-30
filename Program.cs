@@ -32,7 +32,7 @@ using Porter2StemmerStandard;
 var builder = WebApplication.CreateBuilder(args);
 
 // get content file path if provide
-string contentFilePath = args.FirstOrDefault(arg => !arg.StartsWith("--")) ?? "1MB.txt";
+string contentFilePath =  "1MB.txt";
 
 // add services to the container
 builder.Services.AddControllers();
